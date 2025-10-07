@@ -10,6 +10,7 @@ import AppKit
 
 struct ContentView: View {
     @StateObject private var projectManager = ProjectManager.shared
+    @StateObject private var zoomManager = ZoomManager()
     @State private var selectedFileURL: URL?
     @State private var fileContent: String = ""
     @State private var fileError: String?
@@ -17,61 +18,57 @@ struct ContentView: View {
     @State private var showRawMarkdown: Bool = false
     
     var body: some View {
-        VStack(spacing: 20) {
-            Text("Project Progress Tracker")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-            
-            Text("Reads markdown files for project tracking")
-                .font(.title2)
-                .foregroundColor(.secondary)
-            
+        VStack(spacing: 0) {
+            // Remove the large title/subtitle area!
+            if let activeProject = projectManager.activeProject {
+                HStack {
+                    // LEFT: Add New File button
+                    Button(action: selectMarkdownFile) {
+                        Label("Add New File", systemImage: "plus")
+                    }
+                    .buttonStyle(.bordered)
+                    
+                    Spacer()
+                    
+                    // CENTER: Completion status
+                    Text("Completion: \(Int(activeProject.completionPercentage))%")
+                        .font(.headline)
+                        .foregroundColor(.blue)
+                    
+                    Spacer()
+                    
+                    // RIGHT: Zoom controls
+                    HStack(spacing: 8) {
+                        Button(action: { zoomManager.smaller() }) {
+                            Image(systemName: "textformat.size.smaller")
+                        }
+                        .help("Decrease text size")
+
+                        Button(action: { zoomManager.bigger() }) {
+                            Image(systemName: "textformat.size.larger")
+                        }
+                        .help("Increase text size")
+                    }
+                }
+                .padding(.horizontal)
+                .padding(.vertical, 8)
+                .background(Color(NSColor.windowBackgroundColor))
+                .overlay(Divider(), alignment: .bottom)
+            }
+
+            // Main area as before
             if !projectManager.projects.isEmpty {
                 HStack {
                     // Project sidebar
                     ProjectListView(projectManager: projectManager)
                         .frame(width: 250)
                     
-                    // Main content area
+                    // Main content area, inject zoomManager as environment
                     VStack {
                         if let activeProject = projectManager.activeProject {
-                            VStack(spacing: 10) {
-                                Text("Selected File:")
-                                    .font(.headline)
-                                Text(activeProject.filename)
-                                    .font(.body)
-                                    .fontWeight(.medium)
-                                    .multilineTextAlignment(.center)
-                                    .padding(.horizontal)
-                                
-                                HStack {
-                                    Text("Completion: \(Int(activeProject.completionPercentage))%")
-                                        .font(.headline)
-                                        .foregroundColor(.blue)
-                                    
-                                    if activeProject.isSaving {
-                                        Text("Saving...")
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                    } else if let lastSaveTime = activeProject.lastSaveTime {
-                                        Text("Saved at \(formatTime(lastSaveTime))")
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                    }
-                                }
-                                
-                                Button("Add New File") {
-                                    selectMarkdownFile()
-                                }
-                                .buttonStyle(.bordered)
-                            }
-                            .padding()
-                            .background(Color.gray.opacity(0.1))
-                            .cornerRadius(8)
-                            
-                            // File content display area
                             VStack {
                                 ContentListView(document: activeProject)
+                                    .environmentObject(zoomManager)
                                 
                                 Spacer(minLength: 20)
                                 
@@ -126,7 +123,6 @@ struct ContentView: View {
                         .foregroundColor(.secondary)
                         .padding()
                 }
-                
                 Spacer()
             }
             
@@ -155,6 +151,9 @@ struct ContentView: View {
             } else {
                 fileContent = ""
             }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .openFile)) { _ in
+            selectMarkdownFile()
         }
     }
     
@@ -200,28 +199,32 @@ struct ContentView: View {
         isLoading = true
         fileError = nil
         
-        DispatchQueue.main.async {
+        DispatchQueue.global(qos: .userInitiated).async {
             do {
                 // Read the file content with UTF-8 encoding
                 let content = try String(contentsOf: url, encoding: .utf8)
-                self.fileContent = content
                 let parsedItems = MarkdownParser.shared.parse(content)
                 
                 // Create new document
                 let document = Document()
                 document.loadItems(parsedItems, filename: url.lastPathComponent, fileURL: url)
                 
-                // Add to project manager
-                self.projectManager.addProject(document)
-                self.projectManager.setActiveProject(document)
-                
-                // Print the actual document content after all processing is complete
-                self.printDocumentContent(document: document, filename: url.lastPathComponent)
-                self.isLoading = false
+                DispatchQueue.main.async {
+                    self.fileContent = content
+                    // Add to project manager
+                    self.projectManager.addProject(document)
+                    self.projectManager.setActiveProject(document)
+                    
+                    // Print the actual document content after all processing is complete
+                    self.printDocumentContent(document: document, filename: url.lastPathComponent)
+                    self.isLoading = false
+                }
             } catch {
-                self.fileError = "Failed to read file: \(error.localizedDescription)"
-                self.fileContent = ""
-                self.isLoading = false
+                DispatchQueue.main.async {
+                    self.fileError = "Failed to read file: \(error.localizedDescription)"
+                    self.fileContent = ""
+                    self.isLoading = false
+                }
             }
         }
     }

@@ -35,7 +35,6 @@ struct ContentItem: Identifiable {
             indentationLevel: indentationLevel,
             position: position
         )
-        print("DEBUG: Created new ContentItem with ID: \(self.id) [Type: \(type), Text: '\(text)', Position: \(position)]")
     }
     
     /// Private initializer to create ContentItem with explicit ID (for preserving original IDs)
@@ -46,13 +45,11 @@ struct ContentItem: Identifiable {
         self.level = level
         self.isChecked = isChecked
         self.indentationLevel = indentationLevel
-        print("DEBUG: Created ContentItem with preserved ID: \(self.id)")
     }
     
     /// Create a copy of this ContentItem with updated checked state
     func withCheckedState(_ isChecked: Bool) -> ContentItem {
-        print("DEBUG: Creating copy with updated state - Original ID: \(self.id), New State: \(isChecked)")
-        let updatedItem = ContentItem(
+        return ContentItem(
             id: self.id,  // Preserve the original ID
             type: self.type,
             text: self.text,
@@ -60,8 +57,6 @@ struct ContentItem: Identifiable {
             isChecked: isChecked,
             indentationLevel: self.indentationLevel
         )
-        print("DEBUG: Copy created - Original ID: \(self.id), Updated ID: \(updatedItem.id), Match: \(self.id == updatedItem.id)")
-        return updatedItem
     }
     
     /// Generate a stable ID based on item characteristics
@@ -70,9 +65,7 @@ struct ContentItem: Identifiable {
         let textHash = text.data(using: .utf8)?.sha256().hexEncodedString().prefix(8) ?? ""
         
         // Format: "{type}_{indentLevel}_{level}_{textHash}_{position}"
-        let generatedID = "\(type.rawValue)_\(indentationLevel)_\(level)_\(textHash)_\(position)"
-        print("DEBUG: Generated ID: \(generatedID) [Type: \(type), Indent: \(indentationLevel), Level: \(level), Hash: \(textHash), Position: \(position)]")
-        return generatedID
+        return "\(type.rawValue)_\(indentationLevel)_\(level)_\(textHash)_\(position)"
     }
 }
 

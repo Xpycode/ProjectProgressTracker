@@ -9,29 +9,32 @@ import SwiftUI
 
 struct CheckboxRowView: View {
     @ObservedObject var document: Document
+    @EnvironmentObject var zoom: ZoomManager
     let item: ContentItem
     
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
+        HStack(alignment: .center, spacing: 6) {
             Button(action: {
-                print("DEBUG: Checkbox button clicked - ID: \(item.id), Current state: \(item.isChecked)")
                 document.updateCheckbox(id: item.id, isChecked: !item.isChecked)
             }) {
                 Image(systemName: item.isChecked ? "checkmark.square.fill" : "square")
                     .foregroundColor(item.isChecked ? .green : .secondary)
-                    .font(.title3)
+                    .font(.caption)
             }
             .buttonStyle(PlainButtonStyle())
             
+            // checkbox text:
             Text(item.text)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .font(.system(size: 14 * zoom.scale, weight: .regular))
                 .foregroundColor(item.isChecked ? .secondary : .primary)
-                .strikethrough(item.isChecked)
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .padding(.vertical, 1)
             
-            Spacer()
+            Spacer(minLength: 2)
         }
-        .padding(.vertical, 2)
-        .padding(.leading, CGFloat(item.indentationLevel * 10 + 20))
+        .padding(.vertical, 0)
+        .padding(.leading, CGFloat(item.indentationLevel * 8 + 12))
     }
 }
 

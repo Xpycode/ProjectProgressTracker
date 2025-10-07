@@ -23,7 +23,7 @@ class ProjectManager: ObservableObject {
         }
     }
     
-    private var cancellables = Set<AnyCancellable>()
+    private var cancellables = [UUID: AnyCancellable]()
     
     private init() {
         // Load the last active project ID from UserDefaults
@@ -36,12 +36,13 @@ class ProjectManager: ObservableObject {
     /// Add a new project
     func addProject(_ document: Document) {
         // Observe changes in the document's completion percentage
-        document.$items
+        let cancellable = document.$items
             .sink { [weak self] _ in
                 // Trigger a change in projects to refresh UI
                 self?.objectWillChange.send()
             }
-            .store(in: &cancellables)
+        
+        cancellables[document.id] = cancellable
         
         projects.append(document)
         
@@ -53,6 +54,10 @@ class ProjectManager: ObservableObject {
     
     /// Remove a project
     func removeProject(_ document: Document) {
+        // Cancel and remove the subscription
+        cancellables[document.id]?.cancel()
+        cancellables.removeValue(forKey: document.id)
+        
         projects.removeAll { $0.id == document.id }
         
         // If we removed the active project, select another one

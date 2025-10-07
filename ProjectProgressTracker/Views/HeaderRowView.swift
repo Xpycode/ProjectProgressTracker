@@ -9,41 +9,43 @@ import SwiftUI
 
 struct HeaderRowView: View {
     @ObservedObject var document: Document
+    @EnvironmentObject var zoom: ZoomManager
     let item: ContentItem
     
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 6) {
-            // Collapse/expand button for header items
+        HStack(alignment: .center, spacing: 4) {
             Button(action: {
                 document.toggleHeaderExpansion(headerID: item.id)
             }) {
                 Image(systemName: document.isHeaderExpanded(headerID: item.id) ? "chevron.down" : "chevron.right")
-                    .font(.caption)
+                    .font(.caption2) // Smaller chevron
                     .foregroundColor(.secondary)
             }
             .buttonStyle(PlainButtonStyle())
             
             Text(item.text)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.vertical, 2)
-                .font(headerFont)
-                .fontWeight(.semibold)
+                .font(.system(size: 16 * zoom.scale, weight: .semibold)) // adjust base size for each level as needed
+                .lineLimit(1)
+                .truncationMode(.tail)
                 .foregroundColor(headerColor)
+                .padding(.vertical, 1)
+                .padding(.trailing, 2)
             
-            // Progress counter for headers with checkboxes
+            Spacer(minLength: 2)
+            
             if hasCheckboxes {
                 Text(progressText)
-                    .font(.caption)
+                    .font(.caption2)
                     .foregroundColor(.secondary)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(Color.gray.opacity(0.1))
-                    .cornerRadius(4)
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 0)
+                    .background(Color.gray.opacity(0.13))
+                    .cornerRadius(3)
             }
         }
-        .padding(.vertical, 2)
-        .padding(.leading, CGFloat(item.indentationLevel * 10))
-        .contentShape(Rectangle()) // Make the entire area tappable
+        .padding(.vertical, 1)
+        .padding(.leading, CGFloat(item.indentationLevel * 8))
+        .contentShape(Rectangle())
         .onTapGesture {
             document.toggleHeaderExpansion(headerID: item.id)
         }

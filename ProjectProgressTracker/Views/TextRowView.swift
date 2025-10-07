@@ -8,15 +8,16 @@
 import SwiftUI
 
 struct TextRowView: View {
+    @EnvironmentObject var zoom: ZoomManager
     let item: ContentItem
     
     var body: some View {
         Text(item.text)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 2)
-            .font(.body)
+            .font(.system(size: 13 * zoom.scale))
             .foregroundColor(.secondary)
-            .padding(.leading, CGFloat(item.indentationLevel * 10 + 20))
+            .lineLimit(1)
+            .truncationMode(.tail)
+            .padding(.leading, CGFloat(item.indentationLevel * 8 + 12))
     }
 }
 

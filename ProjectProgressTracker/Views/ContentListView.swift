@@ -33,40 +33,31 @@ struct ContentListView: View {
     
     // Computed property that filters items based on header collapse states
     private var visibleItems: [ContentItem] {
-        var visible: [ContentItem] = []
-        var collapsedDepths: [Int] = [] // Track indentation levels where content is collapsed
-        
+        var result: [ContentItem] = []
+        var isHidden = false
+        var hiddenUntilLevel = -1
+
         for item in document.items {
-            // Remove collapsed depths that are no longer relevant
-            // When moving to a new item, clear any collapse states from equal or deeper levels
-            // This ensures proper hierarchy management when moving between branches
-            collapsedDepths.removeAll { $0 >= item.indentationLevel }
-            
-            // Check if this item should be hidden due to any collapsed ancestor
-            let shouldBeHidden = collapsedDepths.contains { collapsedDepth in
-                item.indentationLevel > collapsedDepth
-            }
-            
             if item.type == .header {
-                // Headers are visible if not hidden by ancestors
-                // (But their content may still be hidden if the header itself is collapsed)
-                if !shouldBeHidden {
-                    visible.append(item)
-                    
-                    // If this header itself is collapsed, add its level to hide its children
+                if isHidden && item.level <= hiddenUntilLevel {
+                    isHidden = false
+                    hiddenUntilLevel = -1
+                }
+                
+                if !isHidden {
+                    result.append(item)
                     if !document.isHeaderExpanded(headerID: item.id) {
-                        collapsedDepths.append(item.indentationLevel)
+                        isHidden = true
+                        hiddenUntilLevel = item.level
                     }
                 }
             } else {
-                // Content items are only visible if not hidden by collapsed ancestors
-                if !shouldBeHidden {
-                    visible.append(item)
+                if !isHidden {
+                    result.append(item)
                 }
             }
         }
-        
-        return visible
+        return result
     }
 }
 

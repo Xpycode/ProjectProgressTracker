@@ -16,72 +16,33 @@ class MarkdownParser {
     
     /// Parses markdown content into structured ContentItems
     func parse(_ content: String) -> [ContentItem] {
-        print("DEBUG: Parsing markdown content with \(content.components(separatedBy: .newlines).count) lines")
         let lines = content.components(separatedBy: .newlines)
         var items: [ContentItem] = []
         
-        // Track the last header encountered for logical hierarchy
-        var lastHeaderLevel: Int? = nil
-        
-        for (lineIndex, line) in lines.enumerated() {
-            // Skip empty lines
+        for (index, line) in lines.enumerated() {
             let trimmedLine = line.trimmingCharacters(in: .whitespacesAndNewlines)
             if trimmedLine.isEmpty {
                 continue
             }
             
-            // Count physical indentation level from original line
-            let physicalIndentation = countIndentationLevel(for: line)
+            let indentationLevel = countIndentationLevel(for: line)
+            let position = items.count
             
-            // Check for headers (# ## ### etc.)
-            if let headerItem = parseHeader(from: trimmedLine, indentationLevel: physicalIndentation, position: items.count) {
-                // For headers, use their header level as the logical indentation
-                let logicalIndentation = headerItem.level
-                let updatedHeaderItem = ContentItem(
-                    type: headerItem.type,
-                    text: headerItem.text,
-                    level: headerItem.level,
-                    isChecked: headerItem.isChecked,
-                    indentationLevel: logicalIndentation,
-                    position: items.count
-                )
-                
-                print("DEBUG: Parsed header item \(items.count): ID=\(updatedHeaderItem.id), Text='\(updatedHeaderItem.text)'")
-                items.append(updatedHeaderItem)
-                lastHeaderLevel = headerItem.level
-                continue
-            }
-            
-            // For non-header items, assign logical indentation based on last header
-            let logicalIndentation: Int
-            if let headerLevel = lastHeaderLevel {
-                // Items after a header get header level + 1 indentation
-                logicalIndentation = headerLevel + 1
-            } else {
-                // Items before any header get level 1 indentation
-                logicalIndentation = 1
-            }
-            
-            // Check for checkboxes (- [ ] or - [x])
-            if let checkboxItem = parseCheckbox(from: trimmedLine, indentationLevel: logicalIndentation, position: items.count) {
-                print("DEBUG: Parsed checkbox item \(items.count): ID=\(checkboxItem.id), Checked=\(checkboxItem.isChecked), Text='\(checkboxItem.text)'")
+            if let headerItem = parseHeader(from: trimmedLine, indentationLevel: indentationLevel, position: position) {
+                items.append(headerItem)
+            } else if let checkboxItem = parseCheckbox(from: trimmedLine, indentationLevel: indentationLevel, position: position) {
                 items.append(checkboxItem)
-                continue
+            } else {
+                let textItem = ContentItem(
+                    type: .text,
+                    text: trimmedLine,
+                    indentationLevel: indentationLevel,
+                    position: position
+                )
+                items.append(textItem)
             }
-            
-            // Treat as regular text
-            let textItem = ContentItem(
-                type: .text,
-                text: trimmedLine,
-                indentationLevel: logicalIndentation,
-                position: items.count
-            )
-            print("DEBUG: Parsed text item \(items.count): ID=\(textItem.id), Text='\(textItem.text)'")
-            items.append(textItem)
         }
         
-        print("DEBUG: Parsing complete, total items: \(items.count)")
-        print("DEBUG: Item IDs: \(items.map { $0.id })")
         return items
     }
     
