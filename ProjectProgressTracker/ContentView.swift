@@ -145,7 +145,7 @@ struct ContentView: View {
                 window.collectionBehavior.remove(.fullScreenPrimary)
             }
         }
-        .onChange(of: projectManager.activeProject?.id) { newID in
+        .onChange(of: projectManager.activeProject?.id) { _, newID in
             if let newID = newID,
                let project = projectManager.projects.first(where: { $0.id == newID }) {
                 updateFileContent(for: project)
@@ -165,7 +165,7 @@ struct ContentView: View {
         panel.canChooseFiles = true
         panel.canChooseDirectories = false
         panel.allowsMultipleSelection = false
-        panel.allowedContentTypes = [.markdown, .plainText]
+        panel.allowedContentTypes = [UTType(importedAs: "net.daringfireball.markdown"), .plainText]
         panel.prompt = "Select"
         
         // Set default directory to user's documents
@@ -176,7 +176,7 @@ struct ContentView: View {
                 // Validate that the file exists and is readable
                 if FileManager.default.isReadableFile(atPath: selectedURL.path) {
                     // Check if it's a markdown file based on content type
-                    if let type = try? selectedURL.resourceValues(forKeys: [.contentTypeKey]).contentType, type.conforms(to: .markdown) {
+                    if let type = try? selectedURL.resourceValues(forKeys: [.contentTypeKey]).contentType, type.conforms(to: UTType(importedAs: "net.daringfireball.markdown")) {
                         // Check if project is already loaded
                         if projectManager.isProjectLoaded(with: selectedURL) {
                             fileError = "This project is already loaded."

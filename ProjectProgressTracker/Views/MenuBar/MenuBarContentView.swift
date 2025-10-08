@@ -36,7 +36,7 @@ struct MenuBarContentView: View {
         .onAppear {
             selectedProjectID = projectManager.activeProject?.id
         }
-        .onChange(of: projectManager.activeProject?.id) { newID in
+        .onChange(of: projectManager.activeProject?.id) { _, newID in
             selectedProjectID = newID
         }
     }

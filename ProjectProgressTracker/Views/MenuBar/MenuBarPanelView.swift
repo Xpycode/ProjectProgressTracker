@@ -40,11 +40,11 @@ struct MenuBarPanelView: View {
             // Set the initial selection to the active project
             selectedProjectID = manager.activeProject?.id
         }
-        .onChange(of: manager.activeProject?.id) { newID in
+        .onChange(of: manager.activeProject?.id) { _, newID in
             // Keep the selection in sync with the manager
             selectedProjectID = newID
         }
-        .onChange(of: selectedProjectID) { newID in
+        .onChange(of: selectedProjectID) { _, newID in
             // Update the manager when the user picks a new project
             if let newID = newID, let project = manager.projects.first(where: { $0.id == newID }) {
                 manager.setActiveProject(project)
