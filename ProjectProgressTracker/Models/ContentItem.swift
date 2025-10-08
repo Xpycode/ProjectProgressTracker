@@ -14,7 +14,7 @@ enum ItemType: String, CaseIterable {
     case text
 }
 
-struct ContentItem: Identifiable {
+struct ContentItem: Identifiable, Equatable {
     let id: String
     let type: ItemType
     let text: String

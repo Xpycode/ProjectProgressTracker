@@ -1,0 +1,77 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background with subtle gradient -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f8f9fa;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#e9ecef;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="documentGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f8f9fa;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="checkGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#34d399;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#10b981;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.15"/>
+    </filter>
+    <filter id="innerShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000000" flood-opacity="0.1"/>
+    </filter>
+  </defs>
+  
+  <!-- Background circle with modern styling -->
+  <circle cx="512" cy="512" r="480" fill="url(#bgGradient)" stroke="#dee2e6" stroke-width="8"/>
+  
+  <!-- Document/List container -->
+  <rect x="200" y="180" width="624" height="664" rx="32" ry="32" fill="url(#documentGradient)" filter="url(#shadow)" stroke="#e9ecef" stroke-width="2"/>
+  
+  <!-- Header section (representing markdown headers) -->
+  <rect x="240" y="220" width="320" height="24" rx="4" fill="#495057" opacity="0.8"/>
+  <rect x="240" y="260" width="240" height="16" rx="3" fill="#6c757d" opacity="0.6"/>
+  
+  <!-- Progress bar background -->
+  <rect x="240" y="320" width="544" height="12" rx="6" fill="#e9ecef"/>
+  <!-- Progress bar fill (showing ~70% completion) -->
+  <rect x="240" y="320" width="380" height="12" rx="6" fill="url(#checkGradient)"/>
+  
+  <!-- Task items with checkboxes -->
+  <!-- Completed task 1 -->
+  <rect x="240" y="380" width="28" height="28" rx="6" fill="url(#checkGradient)" filter="url(#innerShadow)"/>
+  <path d="M248 394 L256 402 L268 390" stroke="white" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="280" y="385" width="280" height="18" rx="3" fill="#6c757d" opacity="0.5"/>
+  
+  <!-- Completed task 2 -->
+  <rect x="240" y="430" width="28" height="28" rx="6" fill="url(#checkGradient)" filter="url(#innerShadow)"/>
+  <path d="M248 444 L256 452 L268 440" stroke="white" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="280" y="435" width="320" height="18" rx="3" fill="#6c757d" opacity="0.5"/>
+  
+  <!-- Completed task 3 -->
+  <rect x="240" y="480" width="28" height="28" rx="6" fill="url(#checkGradient)" filter="url(#innerShadow)"/>
+  <path d="M248 494 L256 502 L268 490" stroke="white" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="280" y="485" width="240" height="18" rx="3" fill="#6c757d" opacity="0.5"/>
+  
+  <!-- Pending task 1 -->
+  <rect x="240" y="530" width="28" height="28" rx="6" fill="white" stroke="#dee2e6" stroke-width="2" filter="url(#innerShadow)"/>
+  <rect x="280" y="535" width="300" height="18" rx="3" fill="#343a40" opacity="0.8"/>
+  
+  <!-- Pending task 2 -->
+  <rect x="240" y="580" width="28" height="28" rx="6" fill="white" stroke="#dee2e6" stroke-width="2" filter="url(#innerShadow)"/>
+  <rect x="280" y="585" width="260" height="18" rx="3" fill="#343a40" opacity="0.8"/>
+  
+  <!-- Sub-header (indented) -->
+  <rect x="280" y="640" width="200" height="16" rx="3" fill="#6c757d" opacity="0.7"/>
+  
+  <!-- Indented sub-tasks -->
+  <rect x="280" y="680" width="22" height="22" rx="4" fill="url(#checkGradient)" filter="url(#innerShadow)"/>
+  <path d="M286 690 L291 695 L300 686" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="310" y="685" width="200" height="12" rx="2" fill="#6c757d" opacity="0.5"/>
+  
+  <rect x="280" y="715" width="22" height="22" rx="4" fill="white" stroke="#dee2e6" stroke-width="1.5" filter="url(#innerShadow)"/>
+  <rect x="310" y="720" width="180" height="12" rx="2" fill="#343a40" opacity="0.8"/>
+  
+  <!-- Completion percentage indicator -->
+  <circle cx="720" cy="280" r="40" fill="url(#checkGradient)" filter="url(#shadow)"/>
+  <text x="720" y="290" text-anchor="middle" font-family="SF Pro Display, -apple-system, sans-serif" font-size="28" font-weight="700" fill="white">70%</text>
+</svg>

@@ -19,7 +19,7 @@ class MarkdownParser {
         let lines = content.components(separatedBy: .newlines)
         var items: [ContentItem] = []
         
-        for (index, line) in lines.enumerated() {
+        for (_, line) in lines.enumerated() {
             let trimmedLine = line.trimmingCharacters(in: .whitespacesAndNewlines)
             if trimmedLine.isEmpty {
                 continue

@@ -1,0 +1,52 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background with subtle gradient -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f8f9fa;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#e9ecef;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="documentGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f8f9fa;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="checkGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#34d399;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#10b981;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="12" stdDeviation="20" flood-color="#000000" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="512" cy="512" r="480" fill="url(#bgGradient)" stroke="#dee2e6" stroke-width="12"/>
+  
+  <!-- Document container - larger and more prominent -->
+  <rect x="160" y="160" width="704" height="704" rx="48" ry="48" fill="url(#documentGradient)" filter="url(#shadow)" stroke="#e9ecef" stroke-width="4"/>
+  
+  <!-- Large header line -->
+  <rect x="240" y="260" width="400" height="32" rx="6" fill="#343a40"/>
+  
+  <!-- Progress bar - much thicker and more prominent -->
+  <rect x="240" y="340" width="544" height="24" rx="12" fill="#e9ecef"/>
+  <rect x="240" y="340" width="380" height="24" rx="12" fill="url(#checkGradient)"/>
+  
+  <!-- Three large, bold checkboxes -->
+  <!-- Completed checkbox 1 -->
+  <rect x="240" y="420" width="56" height="56" rx="12" fill="url(#checkGradient)"/>
+  <path d="M256 448 L272 464 L296 440" stroke="white" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="320" y="435" width="320" height="26" rx="6" fill="#6c757d" opacity="0.6"/>
+  
+  <!-- Completed checkbox 2 -->
+  <rect x="240" y="520" width="56" height="56" rx="12" fill="url(#checkGradient)"/>
+  <path d="M256 548 L272 564 L296 540" stroke="white" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="320" y="535" width="280" height="26" rx="6" fill="#6c757d" opacity="0.6"/>
+  
+  <!-- Pending checkbox -->
+  <rect x="240" y="620" width="56" height="56" rx="12" fill="white" stroke="#ced4da" stroke-width="4"/>
+  <rect x="320" y="635" width="360" height="26" rx="6" fill="#343a40"/>
+  
+  <!-- Large completion indicator -->
+  <circle cx="720" cy="300" r="60" fill="url(#checkGradient)" filter="url(#shadow)"/>
+  <text x="720" y="315" text-anchor="middle" font-family="SF Pro Display, -apple-system, sans-serif" font-size="36" font-weight="800" fill="white">70%</text>
+</svg>

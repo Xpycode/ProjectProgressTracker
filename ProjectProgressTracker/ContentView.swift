@@ -7,6 +7,7 @@
 
 import SwiftUI
 import AppKit
+import UniformTypeIdentifiers
 
 struct ContentView: View {
     @StateObject private var projectManager = ProjectManager.shared
@@ -164,7 +165,7 @@ struct ContentView: View {
         panel.canChooseFiles = true
         panel.canChooseDirectories = false
         panel.allowsMultipleSelection = false
-        panel.allowedFileTypes = ["md", "markdown", "txt"] // Allow .md, .markdown, and .txt files
+        panel.allowedContentTypes = [.markdown, .plainText]
         panel.prompt = "Select"
         
         // Set default directory to user's documents
@@ -174,9 +175,8 @@ struct ContentView: View {
             if let selectedURL = panel.url {
                 // Validate that the file exists and is readable
                 if FileManager.default.isReadableFile(atPath: selectedURL.path) {
-                    // Check if it's a markdown file based on extension
-                    let fileExtension = selectedURL.pathExtension.lowercased()
-                    if fileExtension == "md" || fileExtension == "markdown" {
+                    // Check if it's a markdown file based on content type
+                    if let type = try? selectedURL.resourceValues(forKeys: [.contentTypeKey]).contentType, type.conforms(to: .markdown) {
                         // Check if project is already loaded
                         if projectManager.isProjectLoaded(with: selectedURL) {
                             fileError = "This project is already loaded."
@@ -186,7 +186,7 @@ struct ContentView: View {
                         selectedFileURL = selectedURL
                         loadFileContent(from: selectedURL)
                     } else {
-                        fileError = "Please select a markdown file (.md or .markdown)."
+                        fileError = "Please select a markdown file."
                     }
                 } else {
                     fileError = "Selected file is not readable."

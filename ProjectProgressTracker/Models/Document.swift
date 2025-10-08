@@ -153,4 +153,30 @@ class Document: ObservableObject, Identifiable {
     var fileURL: URL? {
         return markdownFileURL
     }
+
+    func items(numberOfNextItems: Int) -> (ContentItem?, [ContentItem]) {
+        let lastChecked = checkedItems.last
+        let upcomingItems = uncheckedItems
+        
+        if upcomingItems.isEmpty {
+            return (lastChecked, [])
+        }
+        
+        // Find the index of the first upcoming item in the main items array
+        guard let firstUpcomingIndex = items.firstIndex(where: { $0.id == upcomingItems.first?.id }) else {
+            return (lastChecked, Array(upcomingItems.prefix(numberOfNextItems)))
+        }
+        
+        // Find the header that precedes this item
+        let header = items[0..<firstUpcomingIndex]
+            .last { $0.type == .header }
+            
+        var results: [ContentItem] = []
+        if let header = header {
+            results.append(header)
+        }
+        results.append(contentsOf: upcomingItems.prefix(numberOfNextItems))
+        
+        return (lastChecked, results)
+    }
 }
