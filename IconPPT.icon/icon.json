@@ -1,0 +1,40 @@
+{
+  "fill" : {
+    "automatic-gradient" : "extended-srgb:0.00000,0.53333,1.00000,1.00000"
+  },
+  "groups" : [
+    {
+      "blend-mode" : "normal",
+      "layers" : [
+        {
+          "fill" : "automatic",
+          "glass" : true,
+          "hidden" : false,
+          "image-name" : "progress_tracker_icon.png",
+          "name" : "progress_tracker_icon",
+          "position" : {
+            "scale" : 1.05,
+            "translation-in-points" : [
+              6.221991627039619,
+              -10.261295282240566
+            ]
+          }
+        }
+      ],
+      "lighting" : "individual",
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.5
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "squares" : [
+      "macOS"
+    ]
+  }
+}

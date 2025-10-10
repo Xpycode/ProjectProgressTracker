@@ -28,16 +28,14 @@ struct ContentView: View {
                         Label("Add New File", systemImage: "plus")
                     }
                     .buttonStyle(.bordered)
-                    
+
                     Spacer()
-                    
-                    // CENTER: Completion status
-                    Text("Completion: \(String(format: "%.1f", activeProject.completionPercentage))%")
-                        .font(.headline)
-                        .foregroundColor(.blue)
-                    
+
+                    // CENTER: Progress bar
+                    progressBarView(for: activeProject)
+
                     Spacer()
-                    
+
                     // RIGHT: Zoom controls
                     HStack(spacing: 8) {
                         Button(action: { zoomManager.smaller() }) {
@@ -309,6 +307,43 @@ struct ContentView: View {
             )
         )
         window.makeKeyAndOrderFront(nil)
+    }
+
+    @ViewBuilder
+    private func progressBarView(for document: Document) -> some View {
+        // Gradient progress bar with percentage inside
+        ZStack(alignment: .leading) {
+            // Background
+            RoundedRectangle(cornerRadius: 6)
+                .fill(Color.gray.opacity(0.2))
+                .frame(width: 200, height: 24)
+
+            // Progress fill
+            RoundedRectangle(cornerRadius: 6)
+                .fill(
+                    LinearGradient(
+                        colors: [.blue, .green],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .frame(width: CGFloat(document.completionPercentage / 100) * 200, height: 24)
+
+            // Percentage text (centered in container, not in fill)
+            HStack {
+                Spacer()
+                Text("\(Int(document.completionPercentage))%")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white)
+                    .shadow(color: .black.opacity(0.3), radius: 1, x: 0, y: 1)
+                    .monospacedDigit()
+                Spacer()
+            }
+            .frame(width: 200)
+        }
+        .frame(width: 200, height: 24)
+        .animation(.easeInOut(duration: 0.3), value: document.completionPercentage)
     }
 }
 

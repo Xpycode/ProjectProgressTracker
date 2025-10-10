@@ -13,8 +13,8 @@ struct MenuBarPanelView: View {
                     .foregroundColor(.secondary)
                 Spacer()
             } else {
-                // Header: Project selector and completion percentage
-                HStack(spacing: 8) {
+                // Header: Project selector and progress bar
+                HStack(spacing: 12) {
                     Picker("Project", selection: $selectedProjectID) {
                         ForEach(manager.projects) { project in
                             Text(project.filename)
@@ -28,13 +28,7 @@ struct MenuBarPanelView: View {
                     Spacer()
 
                     if let document = manager.projects.first(where: { $0.id == selectedProjectID }) {
-                        Text("\(String(format: "%.1f", document.completionPercentage))%")
-                            .font(.body)
-                            .foregroundColor(.blue)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(Color.blue.opacity(0.1))
-                            .cornerRadius(6)
+                        progressBarView(for: document)
                     }
                 }
                 .padding(.horizontal, 12)
@@ -61,5 +55,42 @@ struct MenuBarPanelView: View {
     private func syncSelection() {
         // Ensure the selection is valid, defaulting to the first project if the active one is gone
         selectedProjectID = manager.activeProject?.id ?? manager.projects.first?.id
+    }
+
+    @ViewBuilder
+    private func progressBarView(for document: Document) -> some View {
+        // Gradient progress bar with percentage inside
+        ZStack(alignment: .leading) {
+            // Background
+            RoundedRectangle(cornerRadius: 6)
+                .fill(Color.gray.opacity(0.2))
+                .frame(width: 150, height: 24)
+
+            // Progress fill
+            RoundedRectangle(cornerRadius: 6)
+                .fill(
+                    LinearGradient(
+                        colors: [.blue, .green],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .frame(width: CGFloat(document.completionPercentage / 100) * 150, height: 24)
+
+            // Percentage text (centered in container, not in fill)
+            HStack {
+                Spacer()
+                Text("\(Int(document.completionPercentage))%")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white)
+                    .shadow(color: .black.opacity(0.3), radius: 1, x: 0, y: 1)
+                    .monospacedDigit()
+                Spacer()
+            }
+            .frame(width: 150)
+        }
+        .frame(width: 150, height: 24)
+        .animation(.easeInOut(duration: 0.3), value: document.completionPercentage)
     }
 }

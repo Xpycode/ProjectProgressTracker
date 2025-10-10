@@ -10,14 +10,14 @@ import SwiftUI
 
 class MenuBarIconRenderer {
     static func createIcon(completionPercentage: Double) -> NSImage {
-        let size = NSSize(width: 22, height: 22)
+        let size = NSSize(width: 20, height: 20)
 
         let image = NSImage(size: size, flipped: false) { rect in
             // Calculate fill height
             let fillHeight = rect.height * (completionPercentage / 100.0)
 
             // Get SF Symbol
-            let symbolConfig = NSImage.SymbolConfiguration(pointSize: 18, weight: .regular)
+            let symbolConfig = NSImage.SymbolConfiguration(pointSize: 16, weight: .regular)
 
             // Draw background (unfilled) icon in light gray
             if let baseIcon = NSImage(systemSymbolName: "list.bullet.clipboard", accessibilityDescription: nil)?.withSymbolConfiguration(symbolConfig) {
