@@ -21,6 +21,7 @@ class MenuBarController: ObservableObject {
             updateIcon(percentage: ProjectManager.shared.activeProject?.completionPercentage ?? 0)
             button.action = #selector(togglePopover)
             button.target = self
+            button.sendAction(on: .leftMouseDown)
         }
 
         // Observe project changes to update icon
