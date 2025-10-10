@@ -51,6 +51,7 @@ struct ProjectRowView: View {
         .padding(.vertical, 8)
         .background(isActive ? Color.blue.opacity(0.2) : Color.clear)
         .cornerRadius(6)
+        .contentShape(Rectangle())
         .onTapGesture {
             onTap()
         }
