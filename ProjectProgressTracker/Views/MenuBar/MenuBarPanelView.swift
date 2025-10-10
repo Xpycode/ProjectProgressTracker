@@ -24,22 +24,32 @@ struct MenuBarPanelView: View {
                     }
                     .labelsHidden()
                     .pickerStyle(MenuPickerStyle())
+                    .id(selectedProjectID)
+                    .transition(.opacity)
 
                     Spacer()
 
                     if let document = manager.projects.first(where: { $0.id == selectedProjectID }) {
                         progressBarView(for: document)
+                            .id(document.id)
+                            .transition(.opacity)
                     }
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
+                .animation(.easeInOut(duration: 0.3), value: selectedProjectID)
 
                 Divider()
 
-                if let document = manager.projects.first(where: { $0.id == selectedProjectID }) {
-                    MenuBarFocusView(document: document)
-                        .padding(12)
+                VStack {
+                    if let document = manager.projects.first(where: { $0.id == selectedProjectID }) {
+                        MenuBarFocusView(document: document)
+                            .padding(12)
+                            .id(document.id)
+                            .transition(.opacity)
+                    }
                 }
+                .animation(.easeInOut(duration: 0.3), value: selectedProjectID)
             }
         }
         .frame(width: 380)
@@ -92,6 +102,6 @@ struct MenuBarPanelView: View {
             .frame(width: 150)
         }
         .frame(width: 150, height: 24)
-        .animation(.easeInOut(duration: 0.3), value: document.completionPercentage)
+        .animation(.easeInOut(duration: 0.5), value: document.completionPercentage)
     }
 }
