@@ -10,16 +10,20 @@ import SwiftUI
 @main
 struct ProjectProgressTrackerApp: App {
     @StateObject private var zoomManager = ZoomManager()
+    @StateObject private var menuBarController = MenuBarController()
 
     var body: some Scene {
         Window("Project Progress Tracker", id: "main") {
             ContentView()
                 .environmentObject(zoomManager)
+                .onAppear {
+                    menuBarController.setupMenuBar()
+                }
         }
         .commands {
             // Remove the default "New" menu item as it's not needed
             CommandGroup(replacing: .newItem) {}
-            
+
             // Add a custom "File" menu
             CommandMenu("File") {
                 Button("Open Markdown File...") {
@@ -28,11 +32,5 @@ struct ProjectProgressTrackerApp: App {
                 .keyboardShortcut("o", modifiers: .command)
             }
         }
-
-        MenuBarExtra("Project Tracker", systemImage: "list.bullet.clipboard") {
-            MenuBarPanelView()
-                .environmentObject(zoomManager)
-        }
-        .menuBarExtraStyle(.window)
     }
 }

@@ -1,0 +1,31 @@
+# Gemini Debugging Log - 2025-10-08
+
+This log details the investigation and resolution of a runtime crash (`EXC_BREAKPOINT`) in the `MenuBarPanelView`.
+
+## Initial Problem
+
+The application was crashing immediately upon launch when the menu bar extra was opened, particularly when no projects were loaded. The debugger pointed to a low-level system library, and the console output indicated a fatal error: `Picker: the selection "nil" is invalid and does not have an associated tag`.
+
+This meant the SwiftUI `Picker` was being created with a selection binding that was `nil`, but there was no corresponding item in the `Picker`'s list with a `nil` tag.
+
+## Attempt 1: Computed Binding (Failed)
+
+**Action:** My first attempt was to eliminate the `@State` variable for the selection and replace it with a computed `Binding`. The goal was to derive the selection state directly from the `ProjectManager`'s `activeProject` or the `first` project in the list.
+
+**Why it Failed:** This was a logical error. The computed `Binding`'s `get` closure was being called *before* the view's `body` was fully evaluated. This meant that my `if manager.projects.isEmpty` check inside the `body` was happening too late. The `Picker` was still being initialized with a `nil` value from the binding before the view had a chance to prevent it from rendering, causing the exact same crash.
+
+## Attempt 2: Incorrect `onChange` Observer (Failed)
+
+**Action:** I reverted to using a `@State` variable (`selectedProjectID`) and tried to keep it synchronized using `.onAppear` and `.onChange(of: manager.projects)`.
+
+**Why it Failed:** This approach failed at the build stage, not at runtime. The `onChange` modifier requires that the value it's observing conforms to the `Equatable` protocol so it can compare the old and new values. An array of objects (`[Document]`) is only `Equatable` if the object itself (`Document`) is `Equatable`. Since `Document` is a class, it does not conform to `Equatable` by default, leading to a compiler error.
+
+## Attempt 3: Correct `onChange` Observer (Success)
+
+**Action:** The final, successful solution built upon the second attempt. I kept the `@State` variable and the `.onAppear` logic. The key change was fixing the `onChange` modifier.
+
+Instead of observing the entire `manager.projects` array, I changed it to observe a computed array of the project IDs:
+
+`.onChange(of: manager.projects.map { $0.id })`
+
+**Why it Succeeded:** An array of `UUID`s *is* `Equatable`. This allowed `onChange` to correctly detect when a project was added or removed by comparing the list of IDs. When a change is detected, the `syncSelection()` function is called, which safely updates the `@State` variable, ensuring the `Picker`'s selection is always valid before it renders. This resolved the build error and the underlying runtime crash.

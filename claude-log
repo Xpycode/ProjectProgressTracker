@@ -1,0 +1,42 @@
+# Claude Debugging Log - 2025-10-08
+
+## Issue: App Crash on Launch After Clean Build
+
+### Problem Description
+After cleaning the build folder and running the app with Cmd+R, the application crashed immediately on launch. No window or menu bar item was visible, and the console showed minimal output. The system logs showed the app launching but immediately terminating with error code (0, 0, 9).
+
+### Investigation
+Console logs revealed:
+- App was launching with `BackgroundState = 0` (abnormal)
+- Process status showed "running-active-NotVisible" throughout
+- Code signing warning: `CODE SIGNING: cs_invalid_page(...) final status 0x72013034`
+- No actual crash reports generated, indicating immediate termination
+
+### Root Cause
+The entitlements file (`ProjectProgressTracker.entitlements`) had been completely cleared and contained only an empty dictionary (`<dict/>`). This was likely done when configuring the app for App Store Connect/TestFlight submission.
+
+Without the required App Sandbox entitlements, the app failed to initialize properly and terminated immediately.
+
+### Solution
+Restored the required entitlements to `ProjectProgressTracker.entitlements`:
+```xml
+<key>com.apple.security.app-sandbox</key>
+<true/>
+<key>com.apple.security.files.user-selected.read-only</key>
+<true/>
+```
+
+Additionally, fixed `MenuBarPanelView.swift` to properly handle empty project state:
+- Wrapped the Picker in an `if manager.projects.isEmpty` check
+- Added proper `syncSelection()` function to prevent nil selection crashes
+- Used `.onChange(of: manager.projects.map { $0.id })` to observe project changes
+
+### Files Modified
+1. `ProjectProgressTracker/ProjectProgressTracker.entitlements` - Restored sandbox entitlements
+2. `ProjectProgressTracker/Views/MenuBar/MenuBarPanelView.swift` - Fixed empty state handling
+
+### Result
+App now launches successfully with both main window and menu bar extra visible and functional.
+
+### Notes
+The entitlements file should never be completely emptied. For App Store/TestFlight builds, keep the sandbox entitlements and add additional capabilities as needed (e.g., hardened runtime, notarization entitlements).

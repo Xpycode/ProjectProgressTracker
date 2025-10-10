@@ -32,7 +32,7 @@ struct ContentView: View {
                     Spacer()
                     
                     // CENTER: Completion status
-                    Text("Completion: \(Int(activeProject.completionPercentage))%")
+                    Text("Completion: \(String(format: "%.1f", activeProject.completionPercentage))%")
                         .font(.headline)
                         .foregroundColor(.blue)
                     
