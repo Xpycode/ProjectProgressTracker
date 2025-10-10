@@ -18,7 +18,7 @@ enum SortOption: String, CaseIterable {
 class ProjectManager: ObservableObject {
     static let shared = ProjectManager()
 
-    @Published var projects: [Document] = []
+    @Published private(set) var projects: [Document] = []
     @Published var activeProjectID: UUID? {
         didSet {
             // Save the active project ID to UserDefaults

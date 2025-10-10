@@ -20,42 +20,42 @@ struct ContentView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Remove the large title/subtitle area!
-            if let activeProject = projectManager.activeProject {
-                HStack {
-                    // LEFT: Add New File button
-                    Button(action: selectMarkdownFile) {
-                        Label("Add New File", systemImage: "plus")
-                    }
-                    .buttonStyle(.bordered)
-
-                    Spacer()
-
-                    // CENTER: Progress bar
-                    progressBarView(for: activeProject)
-
-                    Spacer()
-
-                    // RIGHT: Zoom controls
-                    HStack(spacing: 8) {
-                        Button(action: { zoomManager.smaller() }) {
-                            Image(systemName: "textformat.size.smaller")
-                        }
-                        .help("Decrease text size")
-
-                        Button(action: { zoomManager.bigger() }) {
-                            Image(systemName: "textformat.size.larger")
-                        }
-                        .help("Increase text size")
-                    }
+            // Top toolbar
+            HStack {
+                // LEFT: Add New File button
+                Button(action: selectMarkdownFile) {
+                    Label("Add New File", systemImage: "plus")
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .background(Color(NSColor.windowBackgroundColor))
-                .overlay(Divider(), alignment: .bottom)
-            }
+                .buttonStyle(.bordered)
 
-            // Main area as before
+                Spacer()
+
+                // CENTER: Progress bar (only if there's an active project)
+                if let activeProject = projectManager.activeProject {
+                    progressBarView(for: activeProject)
+                }
+
+                Spacer()
+
+                // RIGHT: Zoom controls
+                HStack(spacing: 8) {
+                    Button(action: { zoomManager.smaller() }) {
+                        Image(systemName: "textformat.size.smaller")
+                    }
+                    .help("Decrease text size")
+
+                    Button(action: { zoomManager.bigger() }) {
+                        Image(systemName: "textformat.size.larger")
+                    }
+                    .help("Increase text size")
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(Color(NSColor.windowBackgroundColor))
+            .overlay(Divider(), alignment: .bottom)
+
+            // Main content area
             if !projectManager.projects.isEmpty {
                 HStack(spacing: 0) {
                     // Project sidebar
