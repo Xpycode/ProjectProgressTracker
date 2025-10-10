@@ -12,6 +12,13 @@ struct ProjectProgressTrackerApp: App {
     @StateObject private var zoomManager = ZoomManager()
     @StateObject private var menuBarController = MenuBarController()
 
+    init() {
+        // Restore open files when app launches
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            ProjectManager.shared.restoreOpenFiles()
+        }
+    }
+
     var body: some Scene {
         Window("Project Progress Tracker", id: "main") {
             ContentView()

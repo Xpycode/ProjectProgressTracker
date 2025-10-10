@@ -24,9 +24,29 @@ class Document: ObservableObject, Identifiable {
     private var markdownFileURL: URL?
     private var saveCancellable: AnyCancellable?
     private let saveDebounceInterval: TimeInterval = 1.0 // 1 second debounce
+    private var isAccessingSecurityScopedResource: Bool = false
 
     init() {
         self.lastAccessedDate = Date()
+    }
+
+    deinit {
+        stopAccessingSecurityScopedResource()
+    }
+
+    /// Start accessing a security-scoped resource
+    func startAccessingSecurityScopedResource() {
+        guard let url = markdownFileURL, !isAccessingSecurityScopedResource else { return }
+        if url.startAccessingSecurityScopedResource() {
+            isAccessingSecurityScopedResource = true
+        }
+    }
+
+    /// Stop accessing the security-scoped resource
+    func stopAccessingSecurityScopedResource() {
+        guard let url = markdownFileURL, isAccessingSecurityScopedResource else { return }
+        url.stopAccessingSecurityScopedResource()
+        isAccessingSecurityScopedResource = false
     }
 
     /// Update the checkbox state for a specific item with cascading behavior

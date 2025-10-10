@@ -50,18 +50,124 @@ class ProjectManager: ObservableObject {
            let savedSortOption = SortOption(rawValue: sortOptionString) {
             sortOption = savedSortOption
         }
+
+        // Clean up old path-based storage (migration)
+        UserDefaults.standard.removeObject(forKey: "OpenFileURLs")
+    }
+
+    /// Save the list of open file bookmarks to UserDefaults
+    private func saveOpenFiles() {
+        var bookmarks: [Data] = []
+
+        for project in projects {
+            guard let url = project.fileURL else {
+                continue
+            }
+
+            do {
+                let bookmarkData = try url.bookmarkData(
+                    options: .withSecurityScope,
+                    includingResourceValuesForKeys: nil,
+                    relativeTo: nil
+                )
+                bookmarks.append(bookmarkData)
+            } catch {
+                // Failed to create bookmark for this file
+            }
+        }
+
+        UserDefaults.standard.set(bookmarks, forKey: "OpenFileBookmarks")
+    }
+
+    /// Restore previously open files from UserDefaults using bookmarks
+    func restoreOpenFiles() {
+        guard let savedBookmarks = UserDefaults.standard.array(forKey: "OpenFileBookmarks") as? [Data] else {
+            return
+        }
+
+        for bookmarkData in savedBookmarks {
+            do {
+                var isStale = false
+                let url = try URL(
+                    resolvingBookmarkData: bookmarkData,
+                    options: .withSecurityScope,
+                    relativeTo: nil,
+                    bookmarkDataIsStale: &isStale
+                )
+
+                // Skip if already loaded
+                if isProjectLoaded(with: url) {
+                    continue
+                }
+
+                // Start accessing the security-scoped resource
+                guard url.startAccessingSecurityScopedResource() else {
+                    continue
+                }
+
+                // Load the file
+                loadFileInBackground(from: url, isSecurityScoped: true)
+
+            } catch {
+                // Failed to resolve bookmark
+            }
+        }
+    }
+
+    /// Load a file in the background and add it to projects
+    private func loadFileInBackground(from url: URL, isSecurityScoped: Bool = false) {
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+                let content = try String(contentsOf: url, encoding: .utf8)
+                let parsedItems = MarkdownParser.shared.parse(content)
+
+                let document = Document()
+                document.loadItems(parsedItems, filename: url.lastPathComponent, fileURL: url)
+
+                DispatchQueue.main.async {
+                    self.addProject(document)
+                    // If this was a security-scoped resource, start maintaining access
+                    if isSecurityScoped {
+                        document.startAccessingSecurityScopedResource()
+                    }
+                }
+            } catch {
+                // Failed to restore file
+                if isSecurityScoped {
+                    url.stopAccessingSecurityScopedResource()
+                }
+            }
+        }
     }
     
     /// Add a new project
     func addProject(_ document: Document) {
-        // Observe changes in the document's completion percentage
-        let cancellable = document.$items
+        // Observe changes in the document's items and lastCheckedDate
+        let itemsCancellable = document.$items
             .sink { [weak self] _ in
                 // Trigger a change in projects to refresh UI
                 self?.objectWillChange.send()
             }
 
-        cancellables[document.id] = cancellable
+        let lastCheckedCancellable = document.$lastCheckedDate
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                // Re-sort when lastCheckedDate changes (if sorting by lastChecked)
+                if self?.sortOption == .lastChecked {
+                    // Use async to ensure the property has been updated
+                    DispatchQueue.main.async {
+                        self?.sortProjects()
+                    }
+                }
+            }
+
+        // Store both cancellables using a set
+        let combinedCancellable = AnyCancellable {
+            itemsCancellable.cancel()
+            lastCheckedCancellable.cancel()
+        }
+
+        cancellables[document.id] = combinedCancellable
 
         projects.append(document)
 
@@ -72,20 +178,29 @@ class ProjectManager: ObservableObject {
 
         // Sort projects after adding
         sortProjects()
+
+        // Save the updated file list
+        saveOpenFiles()
     }
     
     /// Remove a project
     func removeProject(_ document: Document) {
+        // Stop accessing security-scoped resource
+        document.stopAccessingSecurityScopedResource()
+
         // Cancel and remove the subscription
         cancellables[document.id]?.cancel()
         cancellables.removeValue(forKey: document.id)
-        
+
         projects.removeAll { $0.id == document.id }
-        
+
         // If we removed the active project, select another one
         if activeProjectID == document.id {
             activeProjectID = projects.first?.id
         }
+
+        // Save the updated file list
+        saveOpenFiles()
     }
     
     /// Set active project
@@ -142,15 +257,21 @@ class ProjectManager: ObservableObject {
         case .lastChecked:
             // Sort by last checked date (most recent first)
             projects.sort { (doc1, doc2) in
-                guard let date1 = doc1.lastCheckedDate,
-                      let date2 = doc2.lastCheckedDate else {
-                    // Put documents without lastCheckedDate at the end
-                    if doc1.lastCheckedDate == nil && doc2.lastCheckedDate == nil {
-                        return false
-                    }
-                    return doc1.lastCheckedDate != nil
+                // Handle nil cases explicitly
+                switch (doc1.lastCheckedDate, doc2.lastCheckedDate) {
+                case (.some(let date1), .some(let date2)):
+                    // Both have dates - compare them (most recent first)
+                    return date1 > date2
+                case (.some, .none):
+                    // doc1 has a date, doc2 doesn't - doc1 comes first
+                    return true
+                case (.none, .some):
+                    // doc2 has a date, doc1 doesn't - doc2 comes first
+                    return false
+                case (.none, .none):
+                    // Neither has a date - maintain current order
+                    return false
                 }
-                return date1 > date2
             }
         }
     }

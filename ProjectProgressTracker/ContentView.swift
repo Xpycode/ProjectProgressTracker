@@ -164,37 +164,54 @@ struct ContentView: View {
     
     private func selectMarkdownFile() {
         fileError = nil
-        
+
         let panel = NSOpenPanel()
         panel.canChooseFiles = true
         panel.canChooseDirectories = false
-        panel.allowsMultipleSelection = false
+        panel.allowsMultipleSelection = true
         panel.allowedContentTypes = [UTType(importedAs: "net.daringfireball.markdown"), .plainText]
         panel.prompt = "Select"
-        
+
         // Set default directory to user's documents
         panel.directoryURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
-        
+
         if panel.runModal() == .OK {
-            if let selectedURL = panel.url {
+            let selectedURLs = panel.urls
+
+            guard !selectedURLs.isEmpty else { return }
+
+            var skippedCount = 0
+            var loadedCount = 0
+
+            for selectedURL in selectedURLs {
                 // Validate that the file exists and is readable
                 if FileManager.default.isReadableFile(atPath: selectedURL.path) {
                     // Check if it's a markdown file based on content type
                     if let type = try? selectedURL.resourceValues(forKeys: [.contentTypeKey]).contentType, type.conforms(to: UTType(importedAs: "net.daringfireball.markdown")) {
                         // Check if project is already loaded
                         if projectManager.isProjectLoaded(with: selectedURL) {
-                            fileError = "This project is already loaded."
-                            return
+                            skippedCount += 1
+                            continue
                         }
-                        
+
                         selectedFileURL = selectedURL
                         loadFileContent(from: selectedURL)
+                        loadedCount += 1
                     } else {
-                        fileError = "Please select a markdown file."
+                        fileError = "'\(selectedURL.lastPathComponent)' is not a markdown file."
                     }
                 } else {
-                    fileError = "Selected file is not readable."
+                    fileError = "'\(selectedURL.lastPathComponent)' is not readable."
                 }
+            }
+
+            // Show summary if multiple files were selected
+            if selectedURLs.count > 1 {
+                if skippedCount > 0 {
+                    fileError = "Loaded \(loadedCount) file(s), skipped \(skippedCount) already loaded."
+                }
+            } else if skippedCount > 0 {
+                fileError = "This project is already loaded."
             }
         }
     }
