@@ -14,14 +14,21 @@ class Document: ObservableObject, Identifiable {
     @Published var filename: String = ""
     @Published var isSaving: Bool = false
     @Published var lastSaveTime: Date?
-    
+    @Published var lastAccessedDate: Date
+    @Published var lastCheckedDate: Date?
+    @Published var fileModificationDate: Date?
+
     // Track expanded/collapsed state for headers (now using String IDs)
     @Published var expandedHeaders: Set<String> = []
-    
+
     private var markdownFileURL: URL?
     private var saveCancellable: AnyCancellable?
     private let saveDebounceInterval: TimeInterval = 1.0 // 1 second debounce
-    
+
+    init() {
+        self.lastAccessedDate = Date()
+    }
+
     /// Update the checkbox state for a specific item with cascading behavior
     func updateCheckbox(id: String, isChecked: Bool) {
         guard let index = items.firstIndex(where: { $0.id == id }) else { return }
@@ -39,6 +46,9 @@ class Document: ObservableObject, Identifiable {
         if isChecked {
             updateParentCheckboxes(childIndex: index)
         }
+
+        // Update last checked date
+        lastCheckedDate = Date()
 
         scheduleAutoSave()
     }
@@ -123,7 +133,16 @@ class Document: ObservableObject, Identifiable {
     func loadItems(_ newItems: [ContentItem], filename: String, fileURL: URL) {
         self.markdownFileURL = fileURL
         self.filename = filename
-        
+
+        // Get file modification date
+        if let attributes = try? FileManager.default.attributesOfItem(atPath: fileURL.path),
+           let modificationDate = attributes[.modificationDate] as? Date {
+            self.fileModificationDate = modificationDate
+        }
+
+        // Update last accessed date
+        self.lastAccessedDate = Date()
+
         var itemsWithProgress = newItems
         if let savedData = ProgressPersistence.shared.loadProgress(for: fileURL) {
             ProgressPersistence.shared.applyProgressToItems(&itemsWithProgress, savedStates: savedData.checkboxStates)
@@ -132,7 +151,7 @@ class Document: ObservableObject, Identifiable {
             let headerIDs = newItems.filter { $0.type == .header }.map { $0.id }
             expandedHeaders = Set(headerIDs)
         }
-        
+
         self.items = itemsWithProgress
     }
     

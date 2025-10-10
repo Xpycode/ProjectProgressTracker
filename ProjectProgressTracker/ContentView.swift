@@ -16,8 +16,8 @@ struct ContentView: View {
     @State private var fileContent: String = ""
     @State private var fileError: String?
     @State private var isLoading: Bool = false
-    @State private var showRawMarkdown: Bool = false
-    
+    @State private var sidebarWidth: CGFloat = 250
+
     var body: some View {
         VStack(spacing: 0) {
             // Remove the large title/subtitle area!
@@ -51,80 +51,82 @@ struct ContentView: View {
                         .help("Increase text size")
                     }
                 }
-                .padding(.horizontal)
-                .padding(.vertical, 8)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
                 .background(Color(NSColor.windowBackgroundColor))
                 .overlay(Divider(), alignment: .bottom)
             }
 
             // Main area as before
             if !projectManager.projects.isEmpty {
-                HStack {
+                HStack(spacing: 0) {
                     // Project sidebar
                     ProjectListView(projectManager: projectManager)
-                        .frame(width: 250)
-                    
+                        .frame(width: sidebarWidth)
+
+                    // Resizer divider
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.3))
+                        .frame(width: 1)
+                        .overlay(
+                            Rectangle()
+                                .fill(Color.clear)
+                                .frame(width: 8)
+                                .contentShape(Rectangle())
+                                .gesture(
+                                    DragGesture()
+                                        .onChanged { value in
+                                            let newWidth = sidebarWidth + value.translation.width
+                                            sidebarWidth = min(max(newWidth, 200), 500)
+                                        }
+                                )
+                                .onHover { hovering in
+                                    if hovering {
+                                        NSCursor.resizeLeftRight.push()
+                                    } else {
+                                        NSCursor.pop()
+                                    }
+                                }
+                        )
+
                     // Main content area, inject zoomManager as environment
                     VStack {
                         if let activeProject = projectManager.activeProject {
-                            VStack {
-                                ContentListView(document: activeProject)
-                                    .environmentObject(zoomManager)
-                                
-                                Spacer(minLength: 20)
-                                
-                                // Collapsible Raw Markdown Section
-                                VStack {
-                                    Button(action: {
-                                        withAnimation(.easeInOut(duration: 0.3)) {
-                                            showRawMarkdown.toggle()
-                                        }
-                                    }) {
-                                        HStack {
-                                            Text("Raw Markdown Content")
-                                                .font(.headline)
-                                                .frame(maxWidth: .infinity, alignment: .leading)
-                                            
-                                            Image(systemName: showRawMarkdown ? "chevron.down" : "chevron.right")
-                                                .font(.caption)
-                                                .foregroundColor(.secondary)
-                                        }
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
-                                    .padding(.vertical, 4)
-                                    
-                                    if showRawMarkdown {
-                                        ScrollView {
-                                            Text(fileContent)
-                                                .font(.body.monospaced())
-                                                .frame(maxWidth: .infinity, alignment: .leading)
-                                                .padding()
-                                        }
-                                        .frame(maxWidth: .infinity, maxHeight: 200)
-                                        .background(Color.gray.opacity(0.05))
-                                        .cornerRadius(8)
-                                        .transition(.opacity.combined(with: .scale(scale: 1.0, anchor: .top)))
-                                    }
-                                }
-                            }
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            ContentListView(document: activeProject)
+                                .environmentObject(zoomManager)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
                         }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .padding()
                 }
             } else {
-                VStack {
-                    Button("Select Markdown File") {
-                        selectMarkdownFile()
+                VStack(spacing: 20) {
+                    Spacer()
+
+                    Image(systemName: "doc.text")
+                        .font(.system(size: 60))
+                        .foregroundColor(.secondary.opacity(0.5))
+
+                    Text("No projects loaded")
+                        .font(.title2)
+                        .foregroundColor(.primary)
+
+                    Text("Add a markdown file to get started.")
+                        .foregroundColor(.secondary)
+                        .font(.body)
+
+                    Button(action: selectMarkdownFile) {
+                        Label("Open Markdown File", systemImage: "plus.circle.fill")
+                            .font(.body)
                     }
                     .buttonStyle(.borderedProminent)
                     .controlSize(.large)
-                    
-                    Text("No projects loaded. Add a markdown file to get started.")
-                        .foregroundColor(.secondary)
-                        .padding()
+                    .padding(.top, 8)
+
+                    Spacer()
                 }
-                Spacer()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             
             if let fileError = fileError {
@@ -134,7 +136,6 @@ struct ContentView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding()
         .onAppear {
             // Configure window properties
             if let window = NSApplication.shared.windows.first {
@@ -155,6 +156,9 @@ struct ContentView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .openFile)) { _ in
             selectMarkdownFile()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .showRawMarkdown)) { _ in
+            showRawMarkdownWindow()
         }
     }
     
@@ -263,6 +267,31 @@ struct ContentView: View {
         let formatter = DateFormatter()
         formatter.timeStyle = .short
         return formatter.string(from: date)
+    }
+
+    private func showRawMarkdownWindow() {
+        guard let activeProject = projectManager.activeProject,
+              !fileContent.isEmpty else {
+            return
+        }
+
+        // Create the window
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 700, height: 500),
+            styleMask: [.titled, .closable, .resizable, .miniaturizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.center()
+        window.title = "Raw Markdown: \(activeProject.filename)"
+        window.isReleasedWhenClosed = false
+        window.contentView = NSHostingView(
+            rootView: RawMarkdownWindow(
+                filename: activeProject.filename,
+                content: fileContent
+            )
+        )
+        window.makeKeyAndOrderFront(nil)
     }
 }
 

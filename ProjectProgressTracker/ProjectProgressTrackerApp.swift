@@ -31,6 +31,14 @@ struct ProjectProgressTrackerApp: App {
                 }
                 .keyboardShortcut("o", modifiers: .command)
             }
+
+            // Add to existing Window menu
+            CommandGroup(after: .windowArrangement) {
+                Button("Show Raw Markdown Content") {
+                    NotificationCenter.default.post(name: .showRawMarkdown, object: nil)
+                }
+                .keyboardShortcut("r", modifiers: [.command, .shift])
+            }
         }
     }
 }
