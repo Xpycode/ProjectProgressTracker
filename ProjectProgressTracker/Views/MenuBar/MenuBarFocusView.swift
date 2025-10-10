@@ -3,7 +3,7 @@ import SwiftUI
 struct MenuBarFocusView: View {
     @ObservedObject var document: Document
     
-    private let numberOfNextItems = 5
+    private let numberOfNextItems = 9
     
     var body: some View {
         let (lastChecked, nextItems) = document.items(numberOfNextItems: numberOfNextItems)

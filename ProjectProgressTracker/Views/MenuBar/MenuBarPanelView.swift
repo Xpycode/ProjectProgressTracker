@@ -43,6 +43,7 @@ struct MenuBarPanelView: View {
             }
         }
         .frame(width: 380)
+        .fixedSize(horizontal: false, vertical: true)
         .onAppear(perform: syncSelection)
         .onChange(of: manager.projects.map { $0.id }) { _, _ in syncSelection() }
         .onChange(of: selectedProjectID) { _, newID in
