@@ -12,6 +12,7 @@ struct ProjectProgressTrackerApp: App {
     @StateObject private var zoomManager = ZoomManager()
     @StateObject private var menuBarController = MenuBarController()
     @State private var shortcutsWindow: NSWindow?
+    private let hotKeyManager = HotKeyManager()
 
     init() {
         // Restore open files when app launches
@@ -26,6 +27,7 @@ struct ProjectProgressTrackerApp: App {
                 .environmentObject(zoomManager)
                 .onAppear {
                     menuBarController.setupMenuBar()
+                    hotKeyManager.register()
                 }
         }
         .commands {
