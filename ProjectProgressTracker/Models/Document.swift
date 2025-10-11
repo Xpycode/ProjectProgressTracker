@@ -212,22 +212,30 @@ class Document: ObservableObject, Identifiable {
         saveCancellable = Just(())
             .delay(for: .seconds(saveDebounceInterval), scheduler: RunLoop.main)
             .sink { [weak self] in
-                self?.saveProgress()
+                self?.saveToFile()
             }
     }
     
-    /// Save progress immediately
-    private func saveProgress() {
-        guard let fileURL = markdownFileURL else { 
-            return 
-        }
+    /// Save the document content back to the markdown file
+    private func saveToFile() {
+        guard let url = markdownFileURL else { return }
         
         isSaving = true
-        let success = ProgressPersistence.shared.saveProgress(for: self, markdownFileURL: fileURL)
-        isSaving = false
+        let content = MarkdownParser.shared.reconstruct(from: items)
         
-        if success {
-            lastSaveTime = Date()
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+                try content.write(to: url, atomically: true, encoding: .utf8)
+                DispatchQueue.main.async {
+                    self.isSaving = false
+                    self.lastSaveTime = Date()
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self.isSaving = false
+                    // Handle error
+                }
+            }
         }
     }
     
