@@ -137,4 +137,25 @@ class MarkdownParser {
         // print("DEBUG: Created checkbox: ID=\(item.id), Checked=\(isChecked), Indent=\(indentationLevel), Pos=\(position)")
         return item
     }
+
+    /// Reconstructs a markdown string from an array of ContentItems
+    func reconstruct(from items: [ContentItem]) -> String {
+        var lines: [String] = []
+        for item in items {
+            let indentation = String(repeating: " ", count: item.indentationLevel)
+            var line = ""
+            switch item.type {
+            case .header:
+                let headerPrefix = String(repeating: "#", count: item.level)
+                line = "\(indentation)\(headerPrefix) \(item.text)"
+            case .checkbox:
+                let checkboxState = item.isChecked ? "[x]" : "[ ]"
+                line = "\(indentation)- \(checkboxState) \(item.text)"
+            case .text:
+                line = "\(indentation)\(item.text)"
+            }
+            lines.append(line)
+        }
+        return lines.joined(separator: "\n")
+    }
 }
