@@ -229,6 +229,34 @@ class ProjectManager: ObservableObject {
         }
     }
 
+    /// Switch to the next project in the list
+    func switchToNextProject() {
+        guard !projects.isEmpty else { return }
+        guard let activeID = activeProjectID, let currentIndex = projects.firstIndex(where: { $0.id == activeID }) else {
+            return
+        }
+
+        let nextIndex = (currentIndex + 1) % projects.count
+        setActiveProject(projects[nextIndex])
+    }
+
+    /// Switch to the previous project in the list
+    func switchToPreviousProject() {
+        guard !projects.isEmpty else { return }
+        guard let activeID = activeProjectID, let currentIndex = projects.firstIndex(where: { $0.id == activeID }) else {
+            return
+        }
+
+        let prevIndex = (currentIndex - 1 + projects.count) % projects.count
+        setActiveProject(projects[prevIndex])
+    }
+
+    /// Switch to a project at a specific index
+    func switchToProject(at index: Int) {
+        guard projects.indices.contains(index) else { return }
+        setActiveProject(projects[index])
+    }
+
     /// Sort projects based on the current sort option
     private func sortProjects() {
         switch sortOption {
