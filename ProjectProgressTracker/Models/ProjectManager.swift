@@ -8,19 +8,6 @@
 import Foundation
 import Combine
 
-enum SortOption: String, CaseIterable {
-    case name = "Name"
-    case date = "Date Modified"
-    case lastAccessed = "Last Accessed"
-    case lastChecked = "Last Checked"
-}
-
-enum FilterState: String, CaseIterable {
-    case all = "All"
-    case unchecked = "Unchecked"
-    case checked = "Checked"
-}
-
 class ProjectManager: ObservableObject {
     static let shared = ProjectManager()
 
@@ -35,12 +22,6 @@ class ProjectManager: ObservableObject {
             }
         }
     }
-    @Published var sortOption: SortOption = .lastAccessed {
-        didSet {
-            UserDefaults.standard.set(sortOption.rawValue, forKey: "ProjectSortOption")
-            sortProjects()
-        }
-    }
     
     @Published var searchText: String = ""
     @Published var filterState: FilterState = .all
@@ -52,12 +33,6 @@ class ProjectManager: ObservableObject {
         if let activeProjectIDString = UserDefaults.standard.string(forKey: "ActiveProjectID"),
            let uuid = UUID(uuidString: activeProjectIDString) {
             activeProjectID = uuid
-        }
-
-        // Load the sort option from UserDefaults
-        if let sortOptionString = UserDefaults.standard.string(forKey: "ProjectSortOption"),
-           let savedSortOption = SortOption(rawValue: sortOptionString) {
-            sortOption = savedSortOption
         }
 
         // Clean up old path-based storage (migration)
@@ -185,9 +160,6 @@ class ProjectManager: ObservableObject {
             activeProjectID = document.id
         }
 
-        // Sort projects after adding
-        sortProjects()
-
         // Save the updated file list
         saveOpenFiles()
     }
@@ -217,7 +189,6 @@ class ProjectManager: ObservableObject {
         activeProjectID = document.id
         // Update last accessed date when switching to this project
         document.lastAccessedDate = Date()
-        sortProjects()
     }
     
     /// Get active project
@@ -264,6 +235,12 @@ class ProjectManager: ObservableObject {
     func switchToProject(at index: Int) {
         guard projects.indices.contains(index) else { return }
         setActiveProject(projects[index])
+    }
+
+    /// Move a project from a source index set to a destination index
+    func moveProject(from source: IndexSet, to destination: Int) {
+        projects.move(fromOffsets: source, toOffset: destination)
+        saveOpenFiles() // Save the new order
     }
 
     /// Sort projects based on the current sort option
