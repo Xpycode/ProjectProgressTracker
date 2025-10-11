@@ -17,10 +17,12 @@ class Document: ObservableObject, Identifiable {
     @Published var lastAccessedDate: Date
     @Published var lastCheckedDate: Date?
     @Published var fileModificationDate: Date?
+    @Published var hasUnsavedChanges: Bool = false
 
     // Track expanded/collapsed state for headers (now using String IDs)
     @Published var expandedHeaders: Set<String> = []
 
+    private var fileWatcher: FileWatcher?
     private var markdownFileURL: URL?
     private var saveCancellable: AnyCancellable?
     private let saveDebounceInterval: TimeInterval = 1.0 // 1 second debounce
@@ -32,6 +34,33 @@ class Document: ObservableObject, Identifiable {
 
     deinit {
         stopAccessingSecurityScopedResource()
+        fileWatcher?.stop()
+    }
+
+    private func startFileWatcher() {
+        guard let url = markdownFileURL else { return }
+        fileWatcher = FileWatcher(fileURL: url) { [weak self] in
+            self?.hasUnsavedChanges = true
+        }
+        fileWatcher?.start()
+    }
+
+    func reload() {
+        guard let url = markdownFileURL else { return }
+        
+        do {
+            let content = try String(contentsOf: url, encoding: .utf8)
+            var newItems = MarkdownParser.shared.parse(content)
+
+            // Preserve state
+            let oldCheckboxStates = ProgressPersistence.shared.getCheckboxStates(from: self.items)
+            ProgressPersistence.shared.applyProgressToItems(&newItems, savedStates: oldCheckboxStates)
+
+            self.items = newItems
+            self.hasUnsavedChanges = false
+        } catch {
+            // Handle error appropriately
+        }
     }
 
     /// Start accessing a security-scoped resource
@@ -153,6 +182,7 @@ class Document: ObservableObject, Identifiable {
     func loadItems(_ newItems: [ContentItem], filename: String, fileURL: URL) {
         self.markdownFileURL = fileURL
         self.filename = filename
+        startFileWatcher()
 
         // Get file modification date
         if let attributes = try? FileManager.default.attributesOfItem(atPath: fileURL.path),
