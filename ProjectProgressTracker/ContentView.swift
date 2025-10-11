@@ -113,6 +113,22 @@ struct ContentView: View {
                                 .environmentObject(zoomManager)
                                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                         }
+                        
+                        if let activeProject = projectManager.activeProject, activeProject.hasUnsavedChanges {
+                            HStack {
+                                Text("File has been modified externally.")
+                                Spacer()
+                                Button("Reload") {
+                                    activeProject.reload()
+                                }
+                                Button("Dismiss") {
+                                    activeProject.hasUnsavedChanges = false
+                                }
+                            }
+                            .padding()
+                            .background(Color.yellow.opacity(0.8))
+                            .foregroundColor(.black)
+                        }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
