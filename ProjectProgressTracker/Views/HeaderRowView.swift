@@ -97,14 +97,16 @@ struct HeaderRowView: View {
 }
 
 #Preview {
-    let document = Document()
-    let item = ContentItem(
-        type: .header,
-        text: "Main Header",
-        level: 1,
-        isChecked: false,
-        indentationLevel: 0,
-        position: 0
+    HeaderRowView(
+        document: Document(),
+        item: ContentItem(
+            type: .header,
+            text: "Main Header",
+            level: 1,
+            isChecked: false,
+            indentationLevel: 0,
+            position: 0
+        ),
+        isSelected: false
     )
-    return HeaderRowView(document: document, item: item)
 }
