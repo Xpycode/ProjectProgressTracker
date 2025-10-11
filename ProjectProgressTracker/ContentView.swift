@@ -11,7 +11,7 @@ import UniformTypeIdentifiers
 
 struct ContentView: View {
     @StateObject private var projectManager = ProjectManager.shared
-    @StateObject private var zoomManager = ZoomManager()
+    @EnvironmentObject private var zoomManager: ZoomManager
     @State private var selectedFileURL: URL?
     @State private var fileContent: String = ""
     @State private var fileError: String?

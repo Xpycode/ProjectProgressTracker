@@ -37,6 +37,55 @@ struct ProjectProgressTrackerApp: App {
                     NotificationCenter.default.post(name: .openFile, object: nil)
                 }
                 .keyboardShortcut("o", modifiers: .command)
+                
+                Button("Close Project") {
+                    if let activeProject = ProjectManager.shared.activeProject {
+                        ProjectManager.shared.removeProject(activeProject)
+                    }
+                }
+                .keyboardShortcut("w", modifiers: .command)
+                .disabled(ProjectManager.shared.activeProject == nil)
+            }
+            
+            // Add a "View" menu for zoom controls
+            CommandMenu("View") {
+                Button("Zoom In") {
+                    zoomManager.bigger()
+                }
+                .keyboardShortcut("=", modifiers: .command)
+                
+                Button("Zoom Out") {
+                    zoomManager.smaller()
+                }
+                .keyboardShortcut("-", modifiers: .command)
+                
+                Button("Reset Zoom") {
+                    zoomManager.reset()
+                }
+                .keyboardShortcut("0", modifiers: .command)
+            }
+
+            // Add a "Project" menu for navigation
+            CommandMenu("Project") {
+                Button("Next Project") {
+                    ProjectManager.shared.switchToNextProject()
+                }
+                .keyboardShortcut(.tab, modifiers: .control)
+                
+                Button("Previous Project") {
+                    ProjectManager.shared.switchToPreviousProject()
+                }
+                .keyboardShortcut(.tab, modifiers: [.control, .shift])
+                
+                Divider()
+                
+                // Shortcuts for Cmd+1 to Cmd+9
+                ForEach(0..<min(ProjectManager.shared.projects.count, 9), id: \.self) { index in
+                    Button(ProjectManager.shared.projects[index].filename) {
+                        ProjectManager.shared.switchToProject(at: index)
+                    }
+                    .keyboardShortcut(KeyEquivalent(Character("\(index + 1)")), modifiers: .command)
+                }
             }
 
             // Add to existing Window menu
@@ -45,6 +94,24 @@ struct ProjectProgressTrackerApp: App {
                     NotificationCenter.default.post(name: .showRawMarkdown, object: nil)
                 }
                 .keyboardShortcut("r", modifiers: [.command, .shift])
+            }
+            
+            // Add a "Help" menu
+            CommandMenu("Help") {
+                Button("Keyboard Shortcuts") {
+                    // Open the shortcuts window
+                    let window = NSWindow(
+                        contentRect: NSRect(x: 0, y: 0, width: 320, height: 400),
+                        styleMask: [.titled, .closable],
+                        backing: .buffered,
+                        defer: false
+                    )
+                    window.center()
+                    window.title = "Keyboard Shortcuts"
+                    window.contentView = NSHostingView(rootView: ShortcutsView())
+                    window.makeKeyAndOrderFront(nil)
+                }
+                .keyboardShortcut("?", modifiers: .command)
             }
         }
     }
