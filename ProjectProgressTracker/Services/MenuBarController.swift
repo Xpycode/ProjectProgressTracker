@@ -41,6 +41,13 @@ class MenuBarController: ObservableObject {
             rootView: MenuBarPanelView()
                 .environmentObject(ZoomManager())
         )
+        
+        // Listen for global hotkey
+        NotificationCenter.default.publisher(for: .toggleMenuBarPanel)
+            .sink { [weak self] _ in
+                self?.togglePopover()
+            }
+            .store(in: &cancellables)
     }
 
     private func updateIcon(percentage: Double) {
