@@ -8,6 +8,12 @@
 import Foundation
 import Combine
 
+enum FilterState: String, CaseIterable {
+    case all = "All"
+    case unchecked = "Unchecked"
+    case checked = "Checked"
+}
+
 class ProjectManager: ObservableObject {
     static let shared = ProjectManager()
 

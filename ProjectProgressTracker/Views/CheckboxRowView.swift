@@ -85,12 +85,14 @@ struct CheckboxRowView: View {
 }
 
 #Preview {
-    let document = Document()
-    let item = ContentItem(
-        type: .checkbox,
-        text: "Sample task",
-        isChecked: false,
-        position: 0
+    CheckboxRowView(
+        document: Document(),
+        item: ContentItem(
+            type: .checkbox,
+            text: "Sample task",
+            isChecked: false,
+            position: 0
+        ),
+        isSelected: false
     )
-    return CheckboxRowView(document: document, item: item)
 }

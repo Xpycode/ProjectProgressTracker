@@ -35,7 +35,7 @@ struct ProjectProgressView: View {
                 }
                 .padding(.horizontal)
                 Divider()
-                ContentListView(document: project)
+                ContentListView(document: project, searchText: .constant(""), filterState: .constant(.all))
                     .frame(maxWidth: .infinity, maxHeight: 300)
                     .padding(.bottom, 4)
             }
