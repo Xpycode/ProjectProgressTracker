@@ -23,22 +23,21 @@ class FileWatcher {
         let fileDescriptor = open(fileURL.path, O_EVTONLY)
         guard fileDescriptor != -1 else { return }
 
-        let source = Dispatch.makeDispatchSourceFileSystemObject(
+        dispatchSource = DispatchSource.makeFileSystemObjectSource(
             fileDescriptor: fileDescriptor,
             eventMask: .write,
-            queue: .main
+            queue: DispatchQueue.main
         )
 
-        source.setEventHandler { [weak self] in
+        dispatchSource?.setEventHandler { [weak self] in
             self?.onFileChanged()
         }
 
-        source.setCancelHandler {
+        dispatchSource?.setCancelHandler {
             close(fileDescriptor)
         }
 
-        source.resume()
-        self.dispatchSource = source
+        dispatchSource?.resume()
     }
 
     func stop() {
