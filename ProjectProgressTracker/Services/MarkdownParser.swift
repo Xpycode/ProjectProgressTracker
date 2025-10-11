@@ -123,7 +123,21 @@ class MarkdownParser {
         textStartIndex = line.index(line.startIndex, offsetBy: patternLength)
         
         // Extract text after checkbox pattern (trimming leading spaces)
-        let text = String(line[textStartIndex...]).trimmingCharacters(in: .whitespaces)
+        var text = String(line[textStartIndex...]).trimmingCharacters(in: .whitespaces)
+        var dueDate: Date?
+
+        // Regex to find "due:YYYY-MM-DD"
+        let regex = #/due:(\d{4}-\d{2}-\d{2})/#
+        if let match = text.firstMatch(of: regex) {
+            let dateString = String(match.1)
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd"
+            if let date = formatter.date(from: dateString) {
+                dueDate = date
+                // Remove the due date string from the text
+                text = text.replacing(regex, with: "").trimmingCharacters(in: .whitespaces)
+            }
+        }
         
         let item = ContentItem(
             type: .checkbox,
@@ -131,7 +145,8 @@ class MarkdownParser {
             level: 0, // Checkboxes don't have header level
             isChecked: isChecked,
             indentationLevel: indentationLevel,
-            position: position
+            position: position,
+            dueDate: dueDate
         )
         
         // print("DEBUG: Created checkbox: ID=\(item.id), Checked=\(isChecked), Indent=\(indentationLevel), Pos=\(position)")
@@ -150,7 +165,13 @@ class MarkdownParser {
                 line = "\(indentation)\(headerPrefix) \(item.text)"
             case .checkbox:
                 let checkboxState = item.isChecked ? "[x]" : "[ ]"
-                line = "\(indentation)- \(checkboxState) \(item.text)"
+                var text = item.text
+                if let dueDate = item.dueDate {
+                    let formatter = DateFormatter()
+                    formatter.dateFormat = "yyyy-MM-dd"
+                    text += " due:\(formatter.string(from: dueDate))"
+                }
+                line = "\(indentation)- \(checkboxState) \(text)"
             case .text:
                 line = "\(indentation)\(item.text)"
             }

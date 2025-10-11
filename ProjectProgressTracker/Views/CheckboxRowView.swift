@@ -44,11 +44,31 @@ struct CheckboxRowView: View {
                     .background(Color.gray.opacity(0.13))
                     .cornerRadius(3)
             }
+            
+            if let dueDate = item.dueDate {
+                Text(dueDate, style: .date)
+                    .font(.caption2)
+                    .foregroundColor(dueDateColor(for: dueDate))
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 1)
+                    .background(dueDateColor(for: dueDate).opacity(0.1))
+                    .cornerRadius(4)
+            }
         }
         .padding(.vertical, 0)
         .padding(.leading, CGFloat(item.indentationLevel * 8 + 12))
         .background(isSelected ? Color.accentColor.opacity(0.2) : Color.clear)
         .cornerRadius(4)
+    }
+
+    private func dueDateColor(for date: Date) -> Color {
+        if Calendar.current.isDateInToday(date) {
+            return .orange
+        }
+        if date < Date() {
+            return .red
+        }
+        return .secondary
     }
 
     // Check if this checkbox has child checkboxes underneath it

@@ -21,13 +21,15 @@ struct ContentItem: Identifiable, Equatable {
     let level: Int          // For headers (1-6)
     let isChecked: Bool     // For checkboxes
     let indentationLevel: Int
+    let dueDate: Date?      // For checkboxes with due dates
     
-    init(type: ItemType, text: String, level: Int = 0, isChecked: Bool = false, indentationLevel: Int = 0, position: Int = 0) {
+    init(type: ItemType, text: String, level: Int = 0, isChecked: Bool = false, indentationLevel: Int = 0, position: Int = 0, dueDate: Date? = nil) {
         self.type = type
         self.text = text
         self.level = level
         self.isChecked = isChecked
         self.indentationLevel = indentationLevel
+        self.dueDate = dueDate
         self.id = ContentItem.generateStableID(
             type: type,
             text: text,
@@ -38,13 +40,14 @@ struct ContentItem: Identifiable, Equatable {
     }
     
     /// Private initializer to create ContentItem with explicit ID (for preserving original IDs)
-    private init(id: String, type: ItemType, text: String, level: Int, isChecked: Bool, indentationLevel: Int) {
+    private init(id: String, type: ItemType, text: String, level: Int, isChecked: Bool, indentationLevel: Int, dueDate: Date?) {
         self.id = id
         self.type = type
         self.text = text
         self.level = level
         self.isChecked = isChecked
         self.indentationLevel = indentationLevel
+        self.dueDate = dueDate
     }
     
     /// Create a copy of this ContentItem with updated checked state
@@ -55,7 +58,8 @@ struct ContentItem: Identifiable, Equatable {
             text: self.text,
             level: self.level,
             isChecked: isChecked,
-            indentationLevel: self.indentationLevel
+            indentationLevel: self.indentationLevel,
+            dueDate: self.dueDate
         )
     }
     
