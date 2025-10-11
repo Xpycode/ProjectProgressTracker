@@ -11,6 +11,7 @@ import SwiftUI
 struct ProjectProgressTrackerApp: App {
     @StateObject private var zoomManager = ZoomManager()
     @StateObject private var menuBarController = MenuBarController()
+    @State private var shortcutsWindow: NSWindow?
 
     init() {
         // Restore open files when app launches
@@ -70,12 +71,12 @@ struct ProjectProgressTrackerApp: App {
                 Button("Next Project") {
                     ProjectManager.shared.switchToNextProject()
                 }
-                .keyboardShortcut(.tab, modifiers: .control)
+                .keyboardShortcut("]", modifiers: .command)
                 
                 Button("Previous Project") {
                     ProjectManager.shared.switchToPreviousProject()
                 }
-                .keyboardShortcut(.tab, modifiers: [.control, .shift])
+                .keyboardShortcut("[", modifiers: .command)
                 
                 Divider()
                 
@@ -93,26 +94,39 @@ struct ProjectProgressTrackerApp: App {
                 Button("Show Raw Markdown Content") {
                     NotificationCenter.default.post(name: .showRawMarkdown, object: nil)
                 }
-                .keyboardShortcut("r", modifiers: [.command, .shift])
+                .keyboardShortcut("r", modifiers: .command)
             }
             
             // Add a "Help" menu
             CommandMenu("Help") {
                 Button("Keyboard Shortcuts") {
-                    // Open the shortcuts window
-                    let window = NSWindow(
-                        contentRect: NSRect(x: 0, y: 0, width: 320, height: 400),
-                        styleMask: [.titled, .closable],
-                        backing: .buffered,
-                        defer: false
-                    )
-                    window.center()
-                    window.title = "Keyboard Shortcuts"
-                    window.contentView = NSHostingView(rootView: ShortcutsView())
-                    window.makeKeyAndOrderFront(nil)
+                    showShortcutsWindow()
                 }
                 .keyboardShortcut("?", modifiers: .command)
             }
         }
+    }
+
+    private func showShortcutsWindow() {
+        // If window already exists and is visible, just bring it to front
+        if let window = shortcutsWindow, window.isVisible {
+            window.makeKeyAndOrderFront(nil)
+            return
+        }
+
+        // Create new window
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 320, height: 400),
+            styleMask: [.titled, .closable],
+            backing: .buffered,
+            defer: false
+        )
+        window.center()
+        window.title = "Keyboard Shortcuts"
+        window.isReleasedWhenClosed = false
+        window.contentView = NSHostingView(rootView: ShortcutsView())
+        window.makeKeyAndOrderFront(nil)
+
+        shortcutsWindow = window
     }
 }
