@@ -9,6 +9,8 @@ import SwiftUI
 
 struct ContentListView: View {
     @ObservedObject var document: Document
+    @Binding var searchText: String
+    @Binding var filterState: FilterState
     @State private var selectedItemID: String?
     
     var body: some View {
@@ -24,7 +26,7 @@ struct ContentListView: View {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 4) {
                     List(selection: $selectedItemID) {
-                        ForEach(visibleItems, id: \.id) { item in
+                        ForEach(filteredItems, id: \.id) { item in
                             switch item.type {
                             case .header:
                                 HeaderRowView(document: document, item: item, isSelected: selectedItemID == item.id)
@@ -82,9 +84,30 @@ struct ContentListView: View {
         }
         return result
     }
+
+    private var filteredItems: [ContentItem] {
+        let visible = visibleItems
+
+        // Apply text search
+        let searchedItems = if searchText.isEmpty {
+            visible
+        } else {
+            visible.filter { $0.text.localizedCaseInsensitiveContains(searchText) }
+        }
+
+        // Apply state filter
+        switch filterState {
+        case .all:
+            return searchedItems
+        case .unchecked:
+            return searchedItems.filter { $0.type != .checkbox || !$0.isChecked }
+        case .checked:
+            return searchedItems.filter { $0.type != .checkbox || $0.isChecked }
+        }
+    }
 }
 
 #Preview {
     let document = Document()
-    return ContentListView(document: document)
+    return ContentListView(document: document, searchText: .constant(""), filterState: .constant(.all))
 }

@@ -89,16 +89,32 @@ struct ContentView: View {
                                 }
                         )
 
-                    // Main content area, inject zoomManager as environment
-                    VStack {
+                    // Main content area
+                    VStack(spacing: 0) {
+                        // Search and Filter Toolbar
+                        HStack {
+                            TextField("Search...", text: $projectManager.searchText)
+                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                            
+                            Picker("Filter", selection: $projectManager.filterState) {
+                                ForEach(FilterState.allCases, id: \.self) { state in
+                                    Text(state.rawValue).tag(state)
+                                }
+                            }
+                            .pickerStyle(SegmentedPickerStyle())
+                            .frame(width: 200)
+                        }
+                        .padding()
+                        .background(Color(NSColor.windowBackgroundColor))
+                        .overlay(Divider(), alignment: .bottom)
+
                         if let activeProject = projectManager.activeProject {
-                            ContentListView(document: activeProject)
+                            ContentListView(document: activeProject, searchText: $projectManager.searchText, filterState: $projectManager.filterState)
                                 .environmentObject(zoomManager)
                                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                         }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .padding()
                 }
             } else {
                 VStack(spacing: 20) {

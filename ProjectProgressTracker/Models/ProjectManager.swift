@@ -15,6 +15,12 @@ enum SortOption: String, CaseIterable {
     case lastChecked = "Last Checked"
 }
 
+enum FilterState: String, CaseIterable {
+    case all = "All"
+    case unchecked = "Unchecked"
+    case checked = "Checked"
+}
+
 class ProjectManager: ObservableObject {
     static let shared = ProjectManager()
 
@@ -35,6 +41,9 @@ class ProjectManager: ObservableObject {
             sortProjects()
         }
     }
+    
+    @Published var searchText: String = ""
+    @Published var filterState: FilterState = .all
 
     private var cancellables = [UUID: AnyCancellable]()
     
