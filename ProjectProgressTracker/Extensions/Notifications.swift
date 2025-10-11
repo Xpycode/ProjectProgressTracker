@@ -1,8 +1,12 @@
+//
+//  Notifications.swift
+//  ProjectProgressTracker
+//
+//  Created by Gemini on 11.10.25.
+//
+
 import Foundation
 
 extension Notification.Name {
-    /// Notification to post when the user selects the "Open" menu item.
-    static let openFile = Notification.Name("com.projectprogresstracker.openFile")
-    /// Notification to show raw markdown content window.
-    static let showRawMarkdown = Notification.Name("com.projectprogresstracker.showRawMarkdown")
+    static let spacebarPressed = Notification.Name("spacebarPressed")
 }

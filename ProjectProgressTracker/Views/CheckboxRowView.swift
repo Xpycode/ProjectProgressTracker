@@ -11,6 +11,7 @@ struct CheckboxRowView: View {
     @ObservedObject var document: Document
     @EnvironmentObject var zoom: ZoomManager
     let item: ContentItem
+    let isSelected: Bool
     
     var body: some View {
         HStack(alignment: .center, spacing: 6) {
@@ -46,6 +47,8 @@ struct CheckboxRowView: View {
         }
         .padding(.vertical, 0)
         .padding(.leading, CGFloat(item.indentationLevel * 8 + 12))
+        .background(isSelected ? Color.accentColor.opacity(0.2) : Color.clear)
+        .cornerRadius(4)
     }
 
     // Check if this checkbox has child checkboxes underneath it

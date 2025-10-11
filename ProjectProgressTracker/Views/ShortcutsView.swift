@@ -18,14 +18,16 @@ struct ShortcutsView: View {
                 ShortcutRow(keys: "⌘ O", description: "Open New File")
                 ShortcutRow(keys: "⌘ W", description: "Close Current Project")
                 Divider()
-                ShortcutRow(keys: "⌃ Tab", description: "Next Project")
-                ShortcutRow(keys: "⌃ ⇧ Tab", description: "Previous Project")
+                ShortcutRow(keys: "⌘ ]", description: "Next Project")
+                ShortcutRow(keys: "⌘ [", description: "Previous Project")
                 ShortcutRow(keys: "⌘ 1-9", description: "Switch to Specific Project")
                 Divider()
                 ShortcutRow(keys: "⌘ R", description: "Show Raw Markdown")
                 ShortcutRow(keys: "⌘ =", description: "Zoom In")
                 ShortcutRow(keys: "⌘ -", description: "Zoom Out")
                 ShortcutRow(keys: "⌘ 0", description: "Reset Zoom")
+                Divider()
+                ShortcutRow(keys: "Space", description: "Toggle Checkbox")
             }
             
             Spacer()

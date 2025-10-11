@@ -9,22 +9,45 @@ import SwiftUI
 
 struct ContentListView: View {
     @ObservedObject var document: Document
+    @State private var selectedItemID: String?
     
     var body: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 4) {
-                ForEach(visibleItems, id: \.id) { item in
-                    switch item.type {
-                    case .header:
-                        HeaderRowView(document: document, item: item)
-                    case .checkbox:
-                        CheckboxRowView(document: document, item: item)
-                    case .text:
-                        TextRowView(item: item)
+        ZStack {
+            // Hidden button to capture the spacebar event
+            Button("") {
+                NotificationCenter.default.post(name: .spacebarPressed, object: nil)
+            }
+            .keyboardShortcut(.space, modifiers: [])
+            .frame(width: 0, height: 0)
+            .hidden()
+
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 4) {
+                    List(selection: $selectedItemID) {
+                        ForEach(visibleItems, id: \.id) { item in
+                            switch item.type {
+                            case .header:
+                                HeaderRowView(document: document, item: item, isSelected: selectedItemID == item.id)
+                                    .tag(item.id)
+                            case .checkbox:
+                                CheckboxRowView(document: document, item: item, isSelected: selectedItemID == item.id)
+                                    .tag(item.id)
+                            case .text:
+                                TextRowView(item: item, isSelected: selectedItemID == item.id)
+                                    .tag(item.id)
+                            }
+                        }
+                    }
+                    .onReceive(NotificationCenter.default.publisher(for: .spacebarPressed)) { _ in
+                        if let selectedItemID = selectedItemID,
+                           let item = document.items.first(where: { $0.id == selectedItemID }),
+                           item.type == .checkbox {
+                            document.updateCheckbox(id: selectedItemID, isChecked: !item.isChecked)
+                        }
                     }
                 }
+                .padding(.horizontal)
             }
-            .padding(.horizontal)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.gray.opacity(0.05))

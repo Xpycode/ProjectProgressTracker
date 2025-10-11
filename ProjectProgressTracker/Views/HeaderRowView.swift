@@ -11,6 +11,7 @@ struct HeaderRowView: View {
     @ObservedObject var document: Document
     @EnvironmentObject var zoom: ZoomManager
     let item: ContentItem
+    let isSelected: Bool
     
     var body: some View {
         HStack(alignment: .center, spacing: 4) {
@@ -46,9 +47,8 @@ struct HeaderRowView: View {
         .padding(.vertical, 1)
         .padding(.leading, CGFloat(item.indentationLevel * 8))
         .contentShape(Rectangle())
-        .onTapGesture {
-            document.toggleHeaderExpansion(headerID: item.id)
-        }
+        .background(isSelected ? Color.accentColor.opacity(0.2) : Color.clear)
+        .cornerRadius(4)
     }
     
     private var headerFont: Font {

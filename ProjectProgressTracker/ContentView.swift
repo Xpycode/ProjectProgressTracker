@@ -74,8 +74,10 @@ struct ContentView: View {
                                 .gesture(
                                     DragGesture()
                                         .onChanged { value in
-                                            let newWidth = sidebarWidth + value.translation.width
-                                            sidebarWidth = min(max(newWidth, 200), 500)
+                                            DispatchQueue.main.async {
+                                                let newWidth = sidebarWidth + value.translation.width
+                                                sidebarWidth = min(max(newWidth, 200), 500)
+                                            }
                                         }
                                 )
                                 .onHover { hovering in
