@@ -12,6 +12,7 @@ struct ProjectProgressTrackerApp: App {
     @StateObject private var zoomManager = ZoomManager()
     @StateObject private var menuBarController = MenuBarController()
     @State private var shortcutsWindow: NSWindow?
+    @State private var settingsWindow: NSWindow?
     private let hotKeyManager = HotKeyManager()
 
     init() {
@@ -31,16 +32,21 @@ struct ProjectProgressTrackerApp: App {
                 }
         }
         .commands {
-            // Remove the default "New" menu item as it's not needed
-            CommandGroup(replacing: .newItem) {}
+            // MARK: - App Menu
+            CommandGroup(after: .appInfo) {
+                Button("Settings...") {
+                    showSettingsWindow()
+                }
+                .keyboardShortcut(",", modifiers: .command)
+            }
 
-            // Add a custom "File" menu
-            CommandMenu("File") {
+            // MARK: - File Menu
+            CommandGroup(replacing: .newItem) {
                 Button("Open Markdown File...") {
                     NotificationCenter.default.post(name: .openFile, object: nil)
                 }
                 .keyboardShortcut("o", modifiers: .command)
-                
+
                 Button("Close Project") {
                     if let activeProject = ProjectManager.shared.activeProject {
                         ProjectManager.shared.removeProject(activeProject)
@@ -49,9 +55,16 @@ struct ProjectProgressTrackerApp: App {
                 .keyboardShortcut("w", modifiers: .command)
                 .disabled(ProjectManager.shared.activeProject == nil)
             }
-            
-            // Add a "View" menu for zoom controls
-            CommandMenu("View") {
+
+            // MARK: - Edit Menu (for copy support)
+            CommandGroup(after: .pasteboard) {
+                // The Cmd+C shortcut is handled in ContentListView
+                // This ensures it appears in the menu
+            }
+
+            // MARK: - View Menu
+            CommandGroup(after: .toolbar) {
+                Divider()
                 Button("Zoom In") {
                     zoomManager.bigger()
                 }
@@ -66,9 +79,16 @@ struct ProjectProgressTrackerApp: App {
                     zoomManager.reset()
                 }
                 .keyboardShortcut("0", modifiers: .command)
+                
+                Divider()
+                
+                Button("Show Raw Markdown Content") {
+                    NotificationCenter.default.post(name: .showRawMarkdown, object: nil)
+                }
+                .keyboardShortcut("r", modifiers: .command)
             }
 
-            // Add a "Project" menu for navigation
+            // MARK: - Project Menu (Custom)
             CommandMenu("Project") {
                 Button("Next Project") {
                     ProjectManager.shared.switchToNextProject()
@@ -90,17 +110,9 @@ struct ProjectProgressTrackerApp: App {
                     .keyboardShortcut(KeyEquivalent(Character("\(index + 1)")), modifiers: .command)
                 }
             }
-
-            // Add to existing Window menu
-            CommandGroup(after: .windowArrangement) {
-                Button("Show Raw Markdown Content") {
-                    NotificationCenter.default.post(name: .showRawMarkdown, object: nil)
-                }
-                .keyboardShortcut("r", modifiers: .command)
-            }
             
-            // Add a "Help" menu
-            CommandMenu("Help") {
+            // MARK: - Help Menu
+            CommandGroup(replacing: .help) {
                 Button("Keyboard Shortcuts") {
                     showShortcutsWindow()
                 }
@@ -130,5 +142,26 @@ struct ProjectProgressTrackerApp: App {
         window.makeKeyAndOrderFront(nil)
 
         shortcutsWindow = window
+    }
+
+    private func showSettingsWindow() {
+        if let window = settingsWindow, window.isVisible {
+            window.makeKeyAndOrderFront(nil)
+            return
+        }
+
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 400, height: 200),
+            styleMask: [.titled, .closable],
+            backing: .buffered,
+            defer: false
+        )
+        window.center()
+        window.title = "Settings"
+        window.isReleasedWhenClosed = false
+        window.contentView = NSHostingView(rootView: SettingsView())
+        window.makeKeyAndOrderFront(nil)
+
+        settingsWindow = window
     }
 }

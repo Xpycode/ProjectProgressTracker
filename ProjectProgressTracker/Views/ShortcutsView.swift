@@ -27,6 +27,7 @@ struct ShortcutsView: View {
                 ShortcutRow(keys: "⌘ -", description: "Zoom Out")
                 ShortcutRow(keys: "⌘ 0", description: "Reset Zoom")
                 Divider()
+                ShortcutRow(keys: "⌘ C", description: "Copy Selected Line")
                 ShortcutRow(keys: "Space", description: "Toggle Checkbox")
             }
             

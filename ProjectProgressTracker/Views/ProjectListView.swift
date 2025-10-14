@@ -12,20 +12,38 @@ struct ProjectListView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Projects (\(projectManager.projects.count))")
-                .font(.headline)
-                .padding(.bottom, 4)
+            // Sort option buttons
+            HStack {
+                Spacer()
+                ForEach(SortOption.allCases, id: \.self) { option in
+                    Button(action: {
+                        projectManager.selectSortOption(option)
+                    }) {
+                        HStack(spacing: 2) {
+                            Text(option.rawValue)
+                            if projectManager.sortOption == option {
+                                Image(systemName: projectManager.sortAscending ? "arrow.up" : "arrow.down")
+                            }
+                        }
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(projectManager.sortOption == option ? .accentColor : .secondary)
+                }
+                Spacer()
+            }
+            .padding(.bottom, 4)
 
             if projectManager.projects.isEmpty {
                 Text("No projects loaded")
                     .font(.caption)
                     .foregroundColor(.secondary)
-                    .padding(.horizontal)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 List {
-                    ForEach(projectManager.projects) { document in
+                    ForEach(projectManager.sortedProjects) { document in
                         ProjectRowView(
                             document: document,
+                            sortOption: projectManager.sortOption,
                             isActive: projectManager.isActive(document),
                             onTap: {
                                 projectManager.setActiveProject(document)
@@ -35,18 +53,25 @@ struct ProjectListView: View {
                             }
                         )
                     }
-                    .onMove(perform: projectManager.moveProject)
                 }
+                .listStyle(.plain)
             }
-            
-            Spacer()
         }
         .padding()
         .frame(minWidth: 200, maxHeight: .infinity)
-        .background(Color.gray.opacity(0.05))
+        .background(Color(NSColor.windowBackgroundColor))
     }
 }
 
 #Preview {
-    ProjectListView(projectManager: ProjectManager.shared)
+    let manager = ProjectManager.shared
+    // Add some dummy data for preview
+    let doc1 = Document()
+    doc1.filename = "Project A"
+    let doc2 = Document()
+    doc2.filename = "Project B"
+    manager.addProject(doc1)
+    manager.addProject(doc2)
+    
+    return ProjectListView(projectManager: manager)
 }

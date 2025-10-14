@@ -14,13 +14,19 @@ enum FilterState: String, CaseIterable {
     case checked = "Checked"
 }
 
+enum SortOption: String, CaseIterable {
+    case name = "Name"
+    case date = "Date"
+    case lastAccessed = "Accessed"
+    case lastChecked = "Checked"
+}
+
 class ProjectManager: ObservableObject {
     static let shared = ProjectManager()
 
     @Published private(set) var projects: [Document] = []
     @Published var activeProjectID: UUID? {
         didSet {
-            // Save the active project ID to UserDefaults
             if let id = activeProjectID {
                 UserDefaults.standard.set(id.uuidString, forKey: "ActiveProjectID")
             } else {
@@ -31,25 +37,82 @@ class ProjectManager: ObservableObject {
     
     @Published var searchText: String = ""
     @Published var filterState: FilterState = .all
+    @Published var sortOption: SortOption = .lastAccessed {
+        didSet {
+            UserDefaults.standard.set(sortOption.rawValue, forKey: "ProjectSortOption")
+            objectWillChange.send()
+        }
+    }
+    @Published var sortAscending: Bool = false {
+        didSet {
+            UserDefaults.standard.set(sortAscending, forKey: "ProjectSortAscending")
+            objectWillChange.send()
+        }
+    }
 
     private var cancellables = [UUID: AnyCancellable]()
     
     private init() {
-        // Load the last active project ID from UserDefaults
         if let activeProjectIDString = UserDefaults.standard.string(forKey: "ActiveProjectID"),
            let uuid = UUID(uuidString: activeProjectIDString) {
             activeProjectID = uuid
         }
 
-        // Clean up old path-based storage (migration)
+        if let sortOptionString = UserDefaults.standard.string(forKey: "ProjectSortOption"),
+           let savedSortOption = SortOption(rawValue: sortOptionString) {
+            sortOption = savedSortOption
+        } else {
+            // Use the default from AppSettings if no session-specific one is saved
+            sortOption = AppSettings.shared.defaultSortOption
+        }
+        
+        sortAscending = UserDefaults.standard.bool(forKey: "ProjectSortAscending")
+
         UserDefaults.standard.removeObject(forKey: "OpenFileURLs")
     }
 
+    var sortedProjects: [Document] {
+        return projects.sorted { (doc1, doc2) in
+            switch sortOption {
+            case .name:
+                return sortAscending
+                    ? doc1.filename.localizedCaseInsensitiveCompare(doc2.filename) == .orderedAscending
+                    : doc1.filename.localizedCaseInsensitiveCompare(doc2.filename) == .orderedDescending
+            case .date:
+                let date1 = doc1.fileModificationDate
+                let date2 = doc2.fileModificationDate
+                if date1 == nil && date2 != nil { return false }
+                if date1 != nil && date2 == nil { return true }
+                guard let d1 = date1, let d2 = date2 else { return false }
+                return sortAscending ? d1 < d2 : d1 > d2
+            case .lastAccessed:
+                return sortAscending ? doc1.lastAccessedDate < doc2.lastAccessedDate : doc1.lastAccessedDate > doc2.lastAccessedDate
+            case .lastChecked:
+                let date1 = doc1.lastCheckedDate
+                let date2 = doc2.lastCheckedDate
+                if date1 == nil && date2 != nil { return false }
+                if date1 != nil && date2 == nil { return true }
+                guard let d1 = date1, let d2 = date2 else { return false }
+                return sortAscending ? d1 < d2 : d1 > d2
+            }
+        }
+    }
+    
+    func selectSortOption(_ option: SortOption) {
+        if self.sortOption == option {
+            sortAscending.toggle()
+        } else {
+            self.sortOption = option
+            self.sortAscending = (option == .name)
+        }
+    }
+    
     /// Save the list of open file bookmarks to UserDefaults
     private func saveOpenFiles() {
         var bookmarks: [Data] = []
 
-        for project in projects {
+        // Use the currently displayed order to save bookmarks
+        for project in sortedProjects {
             guard let url = project.fileURL else {
                 continue
             }
@@ -75,7 +138,11 @@ class ProjectManager: ObservableObject {
             return
         }
 
+        var restoredProjects: [Document] = []
+        let group = DispatchGroup()
+
         for bookmarkData in savedBookmarks {
+            group.enter()
             do {
                 var isStale = false
                 let url = try URL(
@@ -85,21 +152,30 @@ class ProjectManager: ObservableObject {
                     bookmarkDataIsStale: &isStale
                 )
 
-                // Skip if already loaded
-                if isProjectLoaded(with: url) {
-                    continue
-                }
-
-                // Start accessing the security-scoped resource
                 guard url.startAccessingSecurityScopedResource() else {
+                    group.leave()
                     continue
                 }
 
-                // Load the file
-                loadFileInBackground(from: url, isSecurityScoped: true)
+                let content = try String(contentsOf: url, encoding: .utf8)
+                let parsedItems = MarkdownParser.shared.parse(content)
 
+                let document = Document()
+                document.loadItems(parsedItems, filename: url.lastPathComponent, fileURL: url)
+                document.startAccessingSecurityScopedResource()
+                restoredProjects.append(document)
+                
             } catch {
                 // Failed to resolve bookmark
+            }
+            group.leave()
+        }
+        
+        group.notify(queue: .main) {
+            self.projects = restoredProjects
+            // Add projects and set up observers
+            restoredProjects.forEach { doc in
+                self.setupObservers(for: doc)
             }
         }
     }
@@ -116,13 +192,11 @@ class ProjectManager: ObservableObject {
 
                 DispatchQueue.main.async {
                     self.addProject(document)
-                    // If this was a security-scoped resource, start maintaining access
                     if isSecurityScoped {
                         document.startAccessingSecurityScopedResource()
                     }
                 }
             } catch {
-                // Failed to restore file
                 if isSecurityScoped {
                     url.stopAccessingSecurityScopedResource()
                 }
@@ -130,76 +204,80 @@ class ProjectManager: ObservableObject {
         }
     }
     
-    /// Add a new project
-    func addProject(_ document: Document) {
-        // Observe changes in the document's items and lastCheckedDate
+    private func setupObservers(for document: Document) {
+        // Check if document is still valid before setting up observers
+        guard projects.contains(where: { $0.id == document.id }) || cancellables[document.id] == nil else {
+            return
+        }
+
         let itemsCancellable = document.$items
-            .sink { [weak self] _ in
-                // Trigger a change in projects to refresh UI
-                self?.objectWillChange.send()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self, weak document] _ in
+                guard let self = self, let document = document else { return }
+                // Verify document still exists in projects array
+                if self.projects.contains(where: { $0.id == document.id }) {
+                    self.objectWillChange.send()
+                }
             }
 
         let lastCheckedCancellable = document.$lastCheckedDate
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                // Re-sort when lastCheckedDate changes (if sorting by lastChecked)
-                if self?.sortOption == .lastChecked {
-                    // Use async to ensure the property has been updated
-                    DispatchQueue.main.async {
-                        self?.sortProjects()
-                    }
+            .sink { [weak self, weak document] _ in
+                guard let self = self, let document = document else { return }
+                // Verify document still exists and sort option requires update
+                if self.projects.contains(where: { $0.id == document.id }) && self.sortOption == .lastChecked {
+                    self.objectWillChange.send()
                 }
             }
 
-        // Store both cancellables using a set
         let combinedCancellable = AnyCancellable {
             itemsCancellable.cancel()
             lastCheckedCancellable.cancel()
         }
 
         cancellables[document.id] = combinedCancellable
+    }
 
+    /// Add a new project
+    func addProject(_ document: Document) {
+        guard !projects.contains(where: { $0.fileURL == document.fileURL }) else { return }
+        
+        setupObservers(for: document)
         projects.append(document)
 
-        // If this is the first project, make it active
         if projects.count == 1 {
             activeProjectID = document.id
         }
 
-        // Save the updated file list
         saveOpenFiles()
     }
     
     /// Remove a project
     func removeProject(_ document: Document) {
-        // Stop accessing security-scoped resource
         document.stopAccessingSecurityScopedResource()
-
-        // Cancel and remove the subscription
         cancellables[document.id]?.cancel()
         cancellables.removeValue(forKey: document.id)
-
         projects.removeAll { $0.id == document.id }
 
-        // If we removed the active project, select another one
         if activeProjectID == document.id {
-            activeProjectID = projects.first?.id
+            activeProjectID = sortedProjects.first?.id
         }
 
-        // Save the updated file list
         saveOpenFiles()
     }
     
     /// Set active project
     func setActiveProject(_ document: Document) {
         activeProjectID = document.id
-        // Update last accessed date when switching to this project
         document.lastAccessedDate = Date()
+        if sortOption == .lastAccessed {
+            objectWillChange.send()
+        }
     }
     
     /// Get active project
     var activeProject: Document? {
-        guard let activeID = activeProjectID else { return projects.first }
+        guard let activeID = activeProjectID else { return sortedProjects.first }
         return projects.first { $0.id == activeID }
     }
     
@@ -217,82 +295,32 @@ class ProjectManager: ObservableObject {
 
     /// Switch to the next project in the list
     func switchToNextProject() {
-        guard !projects.isEmpty else { return }
-        guard let activeID = activeProjectID, let currentIndex = projects.firstIndex(where: { $0.id == activeID }) else {
+        let sorted = sortedProjects
+        guard !sorted.isEmpty else { return }
+        guard let activeID = activeProjectID, let currentIndex = sorted.firstIndex(where: { $0.id == activeID }) else {
             return
         }
 
-        let nextIndex = (currentIndex + 1) % projects.count
-        setActiveProject(projects[nextIndex])
+        let nextIndex = (currentIndex + 1) % sorted.count
+        setActiveProject(sorted[nextIndex])
     }
 
     /// Switch to the previous project in the list
     func switchToPreviousProject() {
-        guard !projects.isEmpty else { return }
-        guard let activeID = activeProjectID, let currentIndex = projects.firstIndex(where: { $0.id == activeID }) else {
+        let sorted = sortedProjects
+        guard !sorted.isEmpty else { return }
+        guard let activeID = activeProjectID, let currentIndex = sorted.firstIndex(where: { $0.id == activeID }) else {
             return
         }
 
-        let prevIndex = (currentIndex - 1 + projects.count) % projects.count
-        setActiveProject(projects[prevIndex])
+        let prevIndex = (currentIndex - 1 + sorted.count) % sorted.count
+        setActiveProject(sorted[prevIndex])
     }
 
     /// Switch to a project at a specific index
     func switchToProject(at index: Int) {
-        guard projects.indices.contains(index) else { return }
-        setActiveProject(projects[index])
-    }
-
-    /// Move a project from a source index set to a destination index
-    func moveProject(from source: IndexSet, to destination: Int) {
-        projects.move(fromOffsets: source, toOffset: destination)
-        saveOpenFiles() // Save the new order
-    }
-
-    /// Sort projects based on the current sort option
-    private func sortProjects() {
-        switch sortOption {
-        case .name:
-            // Sort alphabetically by filename (A-Z)
-            projects.sort { $0.filename.localizedCaseInsensitiveCompare($1.filename) == .orderedAscending }
-
-        case .date:
-            // Sort by file modification date (most recent first)
-            projects.sort { (doc1, doc2) in
-                guard let date1 = doc1.fileModificationDate,
-                      let date2 = doc2.fileModificationDate else {
-                    // Put documents without dates at the end
-                    if doc1.fileModificationDate == nil && doc2.fileModificationDate == nil {
-                        return false
-                    }
-                    return doc1.fileModificationDate != nil
-                }
-                return date1 > date2
-            }
-
-        case .lastAccessed:
-            // Sort by last accessed date (most recent first)
-            projects.sort { $0.lastAccessedDate > $1.lastAccessedDate }
-
-        case .lastChecked:
-            // Sort by last checked date (most recent first)
-            projects.sort { (doc1, doc2) in
-                // Handle nil cases explicitly
-                switch (doc1.lastCheckedDate, doc2.lastCheckedDate) {
-                case (.some(let date1), .some(let date2)):
-                    // Both have dates - compare them (most recent first)
-                    return date1 > date2
-                case (.some, .none):
-                    // doc1 has a date, doc2 doesn't - doc1 comes first
-                    return true
-                case (.none, .some):
-                    // doc2 has a date, doc1 doesn't - doc2 comes first
-                    return false
-                case (.none, .none):
-                    // Neither has a date - maintain current order
-                    return false
-                }
-            }
-        }
+        let sorted = sortedProjects
+        guard sorted.indices.contains(index) else { return }
+        setActiveProject(sorted[index])
     }
 }

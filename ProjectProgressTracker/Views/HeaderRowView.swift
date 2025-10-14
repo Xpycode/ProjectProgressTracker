@@ -1,4 +1,3 @@
-//
 //  HeaderRowView.swift
 //  ProjectProgressTracker
 //

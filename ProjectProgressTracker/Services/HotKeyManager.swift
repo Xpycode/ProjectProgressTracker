@@ -6,14 +6,28 @@
 //
 
 import AppKit
+import Combine
 
 class HotKeyManager {
     private var eventMonitor: Any?
+    private var settingsCancellable: AnyCancellable?
+
+    init() {
+        // Observe changes in AppSettings
+        settingsCancellable = AppSettings.shared.objectWillChange.sink { [weak self] _ in
+            // Use DispatchQueue.main.async to ensure the settings have been updated before we re-register
+            DispatchQueue.main.async {
+                self?.updateRegistration()
+            }
+        }
+    }
 
     func register() {
-        eventMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            // Cmd+Shift+P
-            if event.modifierFlags.contains(.command) && event.modifierFlags.contains(.shift) && event.keyCode == 35 {
+        guard AppSettings.shared.isGlobalHotkeyEnabled else { return }
+        
+        eventMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { event in
+            let settings = AppSettings.shared
+            if event.modifierFlags.intersection(.deviceIndependentFlagsMask) == settings.globalHotkeyModifiers && event.keyCode == settings.globalHotkeyKeyCode {
                 NotificationCenter.default.post(name: .toggleMenuBarPanel, object: nil)
             }
         }
@@ -24,6 +38,11 @@ class HotKeyManager {
             NSEvent.removeMonitor(monitor)
             eventMonitor = nil
         }
+    }
+    
+    func updateRegistration() {
+        unregister()
+        register()
     }
 }
 
