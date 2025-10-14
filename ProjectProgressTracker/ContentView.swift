@@ -16,10 +16,30 @@ struct ContentView: View {
     @State private var fileContent: String = ""
     @State private var fileError: String?
     @State private var isLoading: Bool = false
-    @State private var sidebarWidth: CGFloat = 250
+    @State private var sidebarWidth: CGFloat = 360
 
     var body: some View {
         VStack(spacing: 0) {
+            // Custom title bar with centered filename
+            HStack {
+                Spacer()
+                if let activeProject = projectManager.activeProject {
+                    Text(activeProject.fileURL?.deletingPathExtension().lastPathComponent ?? activeProject.filename.replacingOccurrences(of: ".md", with: ""))
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                } else {
+                    Text("Project Progress Tracker")
+                        .font(.headline)
+                        .foregroundColor(.secondary)
+                }
+                Spacer()
+            }
+            .padding(.vertical, 8)
+            .background(Color(NSColor.windowBackgroundColor))
+            .overlay(Divider(), alignment: .bottom)
+
             // Top toolbar
             HStack {
                 // LEFT: Add New File button
@@ -30,7 +50,7 @@ struct ContentView: View {
 
                 Spacer()
 
-                // CENTER: Progress bar (only if there's an active project)
+                // CENTER: Progress bar
                 if let activeProject = projectManager.activeProject {
                     progressBarView(for: activeProject)
                 }
@@ -76,7 +96,7 @@ struct ContentView: View {
                                         .onChanged { value in
                                             DispatchQueue.main.async {
                                                 let newWidth = sidebarWidth + value.translation.width
-                                                sidebarWidth = min(max(newWidth, 200), 500)
+                                                sidebarWidth = min(max(newWidth, 360), 500)
                                             }
                                         }
                                 )
@@ -95,14 +115,17 @@ struct ContentView: View {
                         HStack {
                             TextField("Search...", text: $projectManager.searchText)
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
-                            
-                            Picker("Filter", selection: $projectManager.filterState) {
+                                .disabled(projectManager.activeProject == nil)
+
+                            Spacer()
+
+                            Picker("", selection: $projectManager.filterState) {
                                 ForEach(FilterState.allCases, id: \.self) { state in
                                     Text(state.rawValue).tag(state)
                                 }
                             }
                             .pickerStyle(SegmentedPickerStyle())
-                            .frame(width: 200)
+                            .disabled(projectManager.activeProject == nil)
                         }
                         .padding()
                         .background(Color(NSColor.windowBackgroundColor))
@@ -112,22 +135,57 @@ struct ContentView: View {
                             ContentListView(document: activeProject, searchText: $projectManager.searchText, filterState: $projectManager.filterState)
                                 .environmentObject(zoomManager)
                                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        } else {
+                            // Empty state when projects exist but none is selected
+                            VStack(spacing: 16) {
+                                Spacer()
+
+                                Image(systemName: "arrow.left")
+                                    .font(.system(size: 48))
+                                    .foregroundColor(.secondary.opacity(0.5))
+
+                                Text("Select a project")
+                                    .font(.title3)
+                                    .foregroundColor(.secondary)
+
+                                Text("Choose a project from the sidebar to view its contents")
+                                    .font(.body)
+                                    .foregroundColor(.secondary.opacity(0.8))
+
+                                Spacer()
+                            }
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
                         }
                         
-                        if let activeProject = projectManager.activeProject, activeProject.hasUnsavedChanges {
-                            HStack {
-                                Text("File has been modified externally.")
-                                Spacer()
-                                Button("Reload") {
-                                    activeProject.reload()
+                        if let activeProject = projectManager.activeProject {
+                            if activeProject.hasUnsavedChanges {
+                                HStack {
+                                    Text("File has been modified externally.")
+                                    Spacer()
+                                    Button("Reload") {
+                                        activeProject.reload()
+                                    }
+                                    Button("Dismiss") {
+                                        activeProject.hasUnsavedChanges = false
+                                    }
                                 }
-                                Button("Dismiss") {
-                                    activeProject.hasUnsavedChanges = false
-                                }
+                                .padding()
+                                .background(Color.yellow.opacity(0.8))
+                                .foregroundColor(.black)
                             }
-                            .padding()
-                            .background(Color.yellow.opacity(0.8))
-                            .foregroundColor(.black)
+
+                            if let reloadError = activeProject.reloadError {
+                                HStack {
+                                    Text(reloadError)
+                                    Spacer()
+                                    Button("Dismiss") {
+                                        activeProject.reloadError = nil
+                                    }
+                                }
+                                .padding()
+                                .background(Color.red.opacity(0.8))
+                                .foregroundColor(.white)
+                            }
                         }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -176,6 +234,9 @@ struct ContentView: View {
                 window.styleMask.remove(.fullScreen)
                 // Also prevent fullscreen through collection behavior
                 window.collectionBehavior.remove(.fullScreenPrimary)
+                // Hide the standard title and use custom title bar
+                window.titleVisibility = .hidden
+                window.titlebarAppearsTransparent = true
             }
         }
         .onChange(of: projectManager.activeProject?.id) { _, newID in
@@ -284,7 +345,7 @@ struct ContentView: View {
     
     private func updateFileContent(for document: Document) {
         guard let fileURL = document.fileURL else { return }
-        
+
         do {
             let content = try String(contentsOf: fileURL, encoding: .utf8)
             self.fileContent = content
@@ -367,10 +428,10 @@ struct ContentView: View {
             HStack {
                 Spacer()
                 Text("\(Int(document.completionPercentage))%")
-                    .font(.subheadline)
+                    .font(.title3)
                     .fontWeight(.semibold)
-                    .foregroundColor(.white)
-                    .shadow(color: .black.opacity(0.3), radius: 1, x: 0, y: 1)
+                    .foregroundColor(document.completionPercentage >= 56 ? .white : .primary)
+                    .shadow(color: document.completionPercentage >= 56 ? .black.opacity(0.3) : .clear, radius: 1, x: 0, y: 1)
                     .monospacedDigit()
                 Spacer()
             }

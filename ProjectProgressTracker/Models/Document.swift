@@ -18,6 +18,7 @@ class Document: ObservableObject, Identifiable {
     @Published var lastCheckedDate: Date?
     @Published var fileModificationDate: Date?
     @Published var hasUnsavedChanges: Bool = false
+    @Published var reloadError: String?
 
     // Track expanded/collapsed state for headers (now using String IDs)
     @Published var expandedHeaders: Set<String> = []
@@ -46,20 +47,34 @@ class Document: ObservableObject, Identifiable {
     }
 
     func reload() {
-        guard let url = markdownFileURL else { return }
-        
+        guard let url = markdownFileURL else {
+            reloadError = "No file URL available"
+            return
+        }
+
         do {
             let content = try String(contentsOf: url, encoding: .utf8)
             var newItems = MarkdownParser.shared.parse(content)
 
             // Preserve state
-            let oldCheckboxStates = ProgressPersistence.shared.getCheckboxStates(from: self.items)
+            var oldCheckboxStates: [String: Bool] = [:]
+            for item in self.items where item.type == .checkbox {
+                oldCheckboxStates[item.id] = item.isChecked
+            }
             ProgressPersistence.shared.applyProgressToItems(&newItems, savedStates: oldCheckboxStates)
 
             self.items = newItems
             self.hasUnsavedChanges = false
+            self.reloadError = nil
+
+            // Update file modification date
+            if let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
+               let modificationDate = attributes[.modificationDate] as? Date {
+                self.fileModificationDate = modificationDate
+            }
         } catch {
-            // Handle error appropriately
+            reloadError = "Failed to reload file: \(error.localizedDescription)"
+            print("Error reloading file: \(error)")
         }
     }
 
@@ -100,6 +115,11 @@ class Document: ObservableObject, Identifiable {
         lastCheckedDate = Date()
 
         scheduleAutoSave()
+
+        // Also save progress to local file
+        if let url = markdownFileURL {
+            _ = ProgressPersistence.shared.saveProgress(for: self, markdownFileURL: url)
+        }
     }
 
     /// Update all child checkboxes (items with higher indentation level)
@@ -196,8 +216,16 @@ class Document: ObservableObject, Identifiable {
         var itemsWithProgress = newItems
         if let savedData = ProgressPersistence.shared.loadProgress(for: fileURL) {
             ProgressPersistence.shared.applyProgressToItems(&itemsWithProgress, savedStates: savedData.checkboxStates)
-            expandedHeaders = savedData.expandedHeaders
+            // If the saved expanded headers set is empty, default to expanding all.
+            // Otherwise, use the saved set.
+            if savedData.expandedHeaders.isEmpty {
+                let headerIDs = newItems.filter { $0.type == .header }.map { $0.id }
+                expandedHeaders = Set(headerIDs)
+            } else {
+                expandedHeaders = savedData.expandedHeaders
+            }
         } else {
+            // Default to expanding all headers if no progress file exists.
             let headerIDs = newItems.filter { $0.type == .header }.map { $0.id }
             expandedHeaders = Set(headerIDs)
         }

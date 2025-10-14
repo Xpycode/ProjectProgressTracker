@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ProjectRowView: View {
     let document: Document
+    let sortOption: SortOption
     let isActive: Bool
     let onTap: () -> Void
     let onClose: () -> Void
@@ -24,13 +25,14 @@ struct ProjectRowView: View {
                 HStack(spacing: 4) {
                     Text("\(Int(document.completionPercentage))%")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .fontWeight(.medium)
+                        .foregroundColor(Color(nsColor: .labelColor))
 
-                    if let lastChecked = document.lastCheckedDate {
+                    if let dateString = formattedDateString {
                         Text("•")
                             .font(.caption)
                             .foregroundColor(.secondary)
-                        Text("checked \(relativeTimeString(from: lastChecked))")
+                        Text(dateString)
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -57,41 +59,41 @@ struct ProjectRowView: View {
         }
     }
 
-    private func relativeTimeString(from date: Date) -> String {
-        let now = Date()
-        let interval = now.timeIntervalSince(date)
+    private var formattedDateString: String? {
+        var dateToShow: Date?
+        var prefix = ""
 
-        let seconds = Int(interval)
-        let minutes = seconds / 60
-        let hours = minutes / 60
-        let days = hours / 24
-        let weeks = days / 7
-        let months = days / 30
-        let years = days / 365
-
-        if seconds < 60 {
-            return "just now"
-        } else if minutes < 60 {
-            return minutes == 1 ? "1m ago" : "\(minutes)m ago"
-        } else if hours < 24 {
-            return hours == 1 ? "1h ago" : "\(hours)h ago"
-        } else if days < 7 {
-            return days == 1 ? "1d ago" : "\(days)d ago"
-        } else if weeks < 4 {
-            return weeks == 1 ? "1w ago" : "\(weeks)w ago"
-        } else if months < 12 {
-            return months == 1 ? "1mo ago" : "\(months)mo ago"
-        } else {
-            return years == 1 ? "1y ago" : "\(years)y ago"
+        switch sortOption {
+        case .date:
+            dateToShow = document.fileModificationDate
+            prefix = "Modified"
+        case .lastAccessed:
+            dateToShow = document.lastAccessedDate
+            prefix = "Accessed"
+        case .lastChecked:
+            dateToShow = document.lastCheckedDate
+            prefix = "Checked"
+        case .name:
+            // When sorting by name, showing the last checked date is a sensible default
+            dateToShow = document.lastCheckedDate
+            prefix = "Checked"
         }
+
+        guard let date = dateToShow else { return nil }
+
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d, h:mm a" // e.g., "Oct 11, 9:52 PM"
+        return "\(prefix) \(formatter.string(from: date))"
     }
 }
 
 #Preview {
     let document = Document()
     document.filename = "Sample Project.md"
+    document.lastCheckedDate = Date()
     return ProjectRowView(
         document: document,
+        sortOption: .lastChecked,
         isActive: true,
         onTap: {},
         onClose: {}
