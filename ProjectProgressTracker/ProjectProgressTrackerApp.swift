@@ -9,13 +9,15 @@ import SwiftUI
 
 @main
 struct ProjectProgressTrackerApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var zoomManager = ZoomManager()
-    @StateObject private var menuBarController = MenuBarController()
     @State private var shortcutsWindow: NSWindow?
     @State private var settingsWindow: NSWindow?
     private let hotKeyManager = HotKeyManager()
 
     init() {
+        print("🚀 App initializing...")
+
         // Restore open files when app launches
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             ProjectManager.shared.restoreOpenFiles()
@@ -27,7 +29,8 @@ struct ProjectProgressTrackerApp: App {
             ContentView()
                 .environmentObject(zoomManager)
                 .onAppear {
-                    menuBarController.setupMenuBar()
+                    print("🚀 ContentView appeared, setting up hotkey...")
+                    // Register hotkey
                     hotKeyManager.register()
                 }
         }
@@ -69,23 +72,60 @@ struct ProjectProgressTrackerApp: App {
                     zoomManager.bigger()
                 }
                 .keyboardShortcut("=", modifiers: .command)
-                
+
                 Button("Zoom Out") {
                     zoomManager.smaller()
                 }
                 .keyboardShortcut("-", modifiers: .command)
-                
+
                 Button("Reset Zoom") {
                     zoomManager.reset()
                 }
                 .keyboardShortcut("0", modifiers: .command)
-                
+
                 Divider()
-                
+
                 Button("Show Raw Markdown Content") {
                     NotificationCenter.default.post(name: .showRawMarkdown, object: nil)
                 }
                 .keyboardShortcut("r", modifiers: .command)
+            }
+
+            // MARK: - Navigate Menu (Custom)
+            CommandMenu("Navigate") {
+                Button("Next Main Header") {
+                    NotificationCenter.default.post(name: .navigateToNextHeader, object: nil)
+                }
+                .keyboardShortcut(.downArrow, modifiers: .command)
+
+                Button("Previous Main Header") {
+                    NotificationCenter.default.post(name: .navigateToPreviousHeader, object: nil)
+                }
+                .keyboardShortcut(.upArrow, modifiers: .command)
+
+                Divider()
+
+                Button("Next Sub-Header") {
+                    NotificationCenter.default.post(name: .navigateToNextSubHeader, object: nil)
+                }
+                .keyboardShortcut(.downArrow, modifiers: .option)
+
+                Button("Previous Sub-Header") {
+                    NotificationCenter.default.post(name: .navigateToPreviousSubHeader, object: nil)
+                }
+                .keyboardShortcut(.upArrow, modifiers: .option)
+
+                Divider()
+
+                Button("Next Parent Checkbox") {
+                    NotificationCenter.default.post(name: .navigateToNextBoldCheckbox, object: nil)
+                }
+                .keyboardShortcut(.downArrow, modifiers: [.command, .option])
+
+                Button("Previous Parent Checkbox") {
+                    NotificationCenter.default.post(name: .navigateToPreviousBoldCheckbox, object: nil)
+                }
+                .keyboardShortcut(.upArrow, modifiers: [.command, .option])
             }
 
             // MARK: - Project Menu (Custom)
@@ -130,7 +170,7 @@ struct ProjectProgressTrackerApp: App {
 
         // Create new window
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 320, height: 400),
+            contentRect: NSRect(x: 0, y: 0, width: 400, height: 550),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false

@@ -38,5 +38,7 @@
 			</dict>
 		</dict>
 	</array>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>This app needs accessibility permissions to enable the global hotkey feature for quick access to your projects.</string>
 </dict>
 </plist>

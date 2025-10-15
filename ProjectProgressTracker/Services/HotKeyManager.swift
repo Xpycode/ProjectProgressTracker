@@ -24,7 +24,16 @@ class HotKeyManager {
 
     func register() {
         guard AppSettings.shared.isGlobalHotkeyEnabled else { return }
-        
+
+        // Check if we have accessibility permissions
+        if !AXIsProcessTrusted() {
+            // Request accessibility permissions
+            let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
+            AXIsProcessTrustedWithOptions(options)
+            print("⚠️ Accessibility permissions required for global hotkey. Please grant access in System Settings > Privacy & Security > Accessibility")
+            return
+        }
+
         eventMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { event in
             let settings = AppSettings.shared
             if event.modifierFlags.intersection(.deviceIndependentFlagsMask) == settings.globalHotkeyModifiers && event.keyCode == settings.globalHotkeyKeyCode {

@@ -9,32 +9,59 @@ import SwiftUI
 
 struct ShortcutsView: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            Text("Keyboard Shortcuts")
-                .font(.largeTitle)
-                .padding(.bottom, 10)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                Text("Keyboard Shortcuts")
+                    .font(.largeTitle)
+                    .padding(.bottom, 10)
 
-            VStack(alignment: .leading, spacing: 15) {
-                ShortcutRow(keys: "⌘ O", description: "Open New File")
-                ShortcutRow(keys: "⌘ W", description: "Close Current Project")
-                Divider()
-                ShortcutRow(keys: "⌘ ]", description: "Next Project")
-                ShortcutRow(keys: "⌘ [", description: "Previous Project")
-                ShortcutRow(keys: "⌘ 1-9", description: "Switch to Specific Project")
-                Divider()
-                ShortcutRow(keys: "⌘ R", description: "Show Raw Markdown")
-                ShortcutRow(keys: "⌘ =", description: "Zoom In")
-                ShortcutRow(keys: "⌘ -", description: "Zoom Out")
-                ShortcutRow(keys: "⌘ 0", description: "Reset Zoom")
-                Divider()
-                ShortcutRow(keys: "⌘ C", description: "Copy Selected Line")
-                ShortcutRow(keys: "Space", description: "Toggle Checkbox")
+                VStack(alignment: .leading, spacing: 15) {
+                    Text("File")
+                        .font(.headline)
+                    ShortcutRow(keys: "⌘ O", description: "Open New File")
+                    ShortcutRow(keys: "⌘ W", description: "Close Current Project")
+
+                    Divider()
+
+                    Text("Projects")
+                        .font(.headline)
+                    ShortcutRow(keys: "⌘ ]", description: "Next Project")
+                    ShortcutRow(keys: "⌘ [", description: "Previous Project")
+                    ShortcutRow(keys: "⌘ 1-9", description: "Switch to Specific Project")
+
+                    Divider()
+
+                    Text("Navigation")
+                        .font(.headline)
+                    ShortcutRow(keys: "⌘ ↓", description: "Next Main Header")
+                    ShortcutRow(keys: "⌘ ↑", description: "Previous Main Header")
+                    ShortcutRow(keys: "⌥ ↓", description: "Next Sub-Header")
+                    ShortcutRow(keys: "⌥ ↑", description: "Previous Sub-Header")
+                    ShortcutRow(keys: "⌘ ⌥ ↓", description: "Next Parent Checkbox")
+                    ShortcutRow(keys: "⌘ ⌥ ↑", description: "Previous Parent Checkbox")
+
+                    Divider()
+
+                    Text("View")
+                        .font(.headline)
+                    ShortcutRow(keys: "⌘ R", description: "Show Raw Markdown")
+                    ShortcutRow(keys: "⌘ =", description: "Zoom In")
+                    ShortcutRow(keys: "⌘ -", description: "Zoom Out")
+                    ShortcutRow(keys: "⌘ 0", description: "Reset Zoom")
+
+                    Divider()
+
+                    Text("Editing")
+                        .font(.headline)
+                    ShortcutRow(keys: "⌘ C", description: "Copy Selected Line")
+                    ShortcutRow(keys: "Space", description: "Toggle Checkbox")
+                }
+
+                Spacer()
             }
-            
-            Spacer()
+            .padding(30)
         }
-        .padding(30)
-        .frame(width: 320, height: 400)
+        .frame(width: 400, height: 550)
     }
 }
 

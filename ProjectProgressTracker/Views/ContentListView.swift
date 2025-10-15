@@ -32,54 +32,6 @@ struct ContentListView: View {
             .frame(width: 0, height: 0)
             .hidden()
 
-            // Hidden button to navigate to next header (Cmd+Down)
-            Button("") {
-                navigateToNextHeader()
-            }
-            .keyboardShortcut(.downArrow, modifiers: .command)
-            .frame(width: 0, height: 0)
-            .hidden()
-
-            // Hidden button to navigate to previous header (Cmd+Up)
-            Button("") {
-                navigateToPreviousHeader()
-            }
-            .keyboardShortcut(.upArrow, modifiers: .command)
-            .frame(width: 0, height: 0)
-            .hidden()
-
-            // Hidden button to navigate to next sub-header (Option+Down)
-            Button("") {
-                navigateToNextSubHeader()
-            }
-            .keyboardShortcut(.downArrow, modifiers: .option)
-            .frame(width: 0, height: 0)
-            .hidden()
-
-            // Hidden button to navigate to previous sub-header (Option+Up)
-            Button("") {
-                navigateToPreviousSubHeader()
-            }
-            .keyboardShortcut(.upArrow, modifiers: .option)
-            .frame(width: 0, height: 0)
-            .hidden()
-
-            // Hidden button to navigate to next bold checkbox (Cmd+Option+Down)
-            Button("") {
-                navigateToNextBoldCheckbox()
-            }
-            .keyboardShortcut(.downArrow, modifiers: [.command, .option])
-            .frame(width: 0, height: 0)
-            .hidden()
-
-            // Hidden button to navigate to previous bold checkbox (Cmd+Option+Up)
-            Button("") {
-                navigateToPreviousBoldCheckbox()
-            }
-            .keyboardShortcut(.upArrow, modifiers: [.command, .option])
-            .frame(width: 0, height: 0)
-            .hidden()
-
             ScrollViewReader { proxy in
                 List(selection: $selectedItemIDs) {
                     ForEach(filteredItems, id: \.id) { item in
@@ -105,6 +57,24 @@ struct ContentListView: View {
                 .listStyle(.plain)
                 .onReceive(NotificationCenter.default.publisher(for: .spacebarPressed)) { _ in
                     toggleSelectedCheckboxes()
+                }
+                .onReceive(NotificationCenter.default.publisher(for: .navigateToNextHeader)) { _ in
+                    navigateToNextHeader()
+                }
+                .onReceive(NotificationCenter.default.publisher(for: .navigateToPreviousHeader)) { _ in
+                    navigateToPreviousHeader()
+                }
+                .onReceive(NotificationCenter.default.publisher(for: .navigateToNextSubHeader)) { _ in
+                    navigateToNextSubHeader()
+                }
+                .onReceive(NotificationCenter.default.publisher(for: .navigateToPreviousSubHeader)) { _ in
+                    navigateToPreviousSubHeader()
+                }
+                .onReceive(NotificationCenter.default.publisher(for: .navigateToNextBoldCheckbox)) { _ in
+                    navigateToNextBoldCheckbox()
+                }
+                .onReceive(NotificationCenter.default.publisher(for: .navigateToPreviousBoldCheckbox)) { _ in
+                    navigateToPreviousBoldCheckbox()
                 }
                 .onChange(of: selectedItemIDs) { _, newSelection in
                     if let firstID = newSelection.first {
