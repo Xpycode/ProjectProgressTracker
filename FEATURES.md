@@ -2,6 +2,39 @@
 
 A combined and prioritized list of potential features for the Project Progress Tracker application.
 
+**Last Updated:** October 14, 2025
+
+---
+
+## Implementation Status Summary
+
+### ✅ Completed Features
+- Comprehensive keyboard shortcuts (Spacebar, Cmd+C, navigation with Cmd/Option/Cmd+Option+Arrows)
+- Multi-select checkbox toggling
+- Search and filter (real-time, All/Unchecked/Checked filters)
+- File watching and auto-reload with notification banner
+- In-app editing with write-back to Markdown file
+- Due date parsing (`due:YYYY-MM-DD` format)
+- Global hotkey for menu bar access
+- Settings/Preferences window
+- Progress persistence (checkbox states saved locally)
+- Hierarchical navigation (main headers, sub-headers, parent checkboxes)
+- Auto-scroll to selected items
+- Custom centered title bar
+- Adaptive text contrast for light/dark modes
+
+### 🔄 Partially Implemented
+- Due dates (parsed but not displayed/highlighted in UI)
+
+### ❌ Not Yet Implemented
+- Additional keyboard shortcuts (Cmd+O, Cmd+W, Cmd+[/], Cmd+1-9, Cmd+R, Cmd+F, Cmd+?)
+- Drag-and-drop project reordering
+- Task archiving
+- Onboarding/help screen
+- Statistics view
+- Export/sharing features
+- Enhanced error recovery
+
 ---
 
 ### Tier 1: Critical Productivity Features
