@@ -54,16 +54,17 @@ class Document: ObservableObject, Identifiable {
 
         do {
             let content = try String(contentsOf: url, encoding: .utf8)
-            var newItems = MarkdownParser.shared.parse(content)
+            let newItems = MarkdownParser.shared.parse(content)
 
-            // Preserve state
-            var oldCheckboxStates: [String: Bool] = [:]
-            for item in self.items where item.type == .checkbox {
-                oldCheckboxStates[item.id] = item.isChecked
-            }
-            ProgressPersistence.shared.applyProgressToItems(&newItems, savedStates: oldCheckboxStates)
+            // Load saved progress and reconcile with new items
+            let savedProgress = ProgressPersistence.shared.loadProgress(for: url)
+            let (reconciledItems, reconciledHeaders) = ProgressPersistence.shared.reconcile(
+                newItems: newItems,
+                with: savedProgress
+            )
 
-            self.items = newItems
+            self.items = reconciledItems
+            self.expandedHeaders = reconciledHeaders
             self.hasUnsavedChanges = false
             self.reloadError = nil
 
@@ -213,24 +214,22 @@ class Document: ObservableObject, Identifiable {
         // Update last accessed date
         self.lastAccessedDate = Date()
 
-        var itemsWithProgress = newItems
-        if let savedData = ProgressPersistence.shared.loadProgress(for: fileURL) {
-            ProgressPersistence.shared.applyProgressToItems(&itemsWithProgress, savedStates: savedData.checkboxStates)
-            // If the saved expanded headers set is empty, default to expanding all.
-            // Otherwise, use the saved set.
-            if savedData.expandedHeaders.isEmpty {
-                let headerIDs = newItems.filter { $0.type == .header }.map { $0.id }
-                expandedHeaders = Set(headerIDs)
-            } else {
-                expandedHeaders = savedData.expandedHeaders
-            }
-        } else {
-            // Default to expanding all headers if no progress file exists.
+        // Load saved progress and reconcile with new items
+        let savedProgress = ProgressPersistence.shared.loadProgress(for: fileURL)
+        let (reconciledItems, reconciledHeaders) = ProgressPersistence.shared.reconcile(
+            newItems: newItems,
+            with: savedProgress
+        )
+
+        // If no expanded headers were preserved and no saved data exists, default to expanding all
+        if reconciledHeaders.isEmpty && savedProgress == nil {
             let headerIDs = newItems.filter { $0.type == .header }.map { $0.id }
             expandedHeaders = Set(headerIDs)
+        } else {
+            expandedHeaders = reconciledHeaders
         }
 
-        self.items = itemsWithProgress
+        self.items = reconciledItems
     }
     
     /// Schedule auto-save with debouncing
