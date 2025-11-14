@@ -28,8 +28,17 @@ class FloatingPanelController: NSObject, NSWindowDelegate {
         }
         
         // Get visible screen area for proper placement
-        guard let screen = NSScreen.main else {
-            print("ERROR: Could not get main screen.")
+        // Try main screen first, fall back to first available screen
+        guard let screen = NSScreen.main ?? NSScreen.screens.first else {
+            print("ERROR: Could not get any available screen.")
+            // Fallback to default positioning if no screen is available
+            panel?.setFrame(
+                NSRect(x: 100, y: 100, width: preferredWidth, height: preferredHeight),
+                display: true
+            )
+            panel?.contentViewController = NSHostingController(rootView: AnyView(content))
+            panel?.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
             return
         }
         let visibleFrame = screen.visibleFrame

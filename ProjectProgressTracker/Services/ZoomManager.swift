@@ -11,7 +11,9 @@ class ZoomManager: ObservableObject {
     let allowedScales: [CGFloat] = [0.85, 0.92, 1.0, 1.12, 1.28] // A-, Normal, A+, etc.
     init() {
         let stored = UserDefaults.standard.object(forKey: "ZoomScale") as? CGFloat
-        self.scale = stored ?? 1.0
+        let candidateScale = stored ?? 1.0
+        // Validate that the scale is in allowedScales to prevent crashes
+        self.scale = allowedScales.contains(candidateScale) ? candidateScale : 1.0
     }
     func smaller() {
         if let idx = allowedScales.firstIndex(of: scale), idx > 0 {

@@ -44,7 +44,11 @@ class ProgressPersistence {
     private func getApplicationSupportDirectory() throws -> URL {
         let fileManager = FileManager.default
         let urls = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)
-        let appSupportURL = urls[0].appendingPathComponent("ProjectProgressTracker")
+        guard let baseURL = urls.first else {
+            throw NSError(domain: "ProgressPersistence", code: 1,
+                         userInfo: [NSLocalizedDescriptionKey: "Could not access application support directory"])
+        }
+        let appSupportURL = baseURL.appendingPathComponent("ProjectProgressTracker")
         
         // Create the directory if it doesn't exist
         if !fileManager.fileExists(atPath: appSupportURL.path) {
@@ -73,8 +77,13 @@ class ProgressPersistence {
         // Use the full path as the basis for the identifier
         let fullPath = markdownFileURL.path
         // Create a hash of the full path to ensure uniqueness
-        let hashedPath = fullPath.data(using: .utf8)?.sha256().hexEncodedString() ?? fullPath
-        return hashedPath
+        if let hash = fullPath.data(using: .utf8)?.sha256().hexEncodedString() {
+            return hash
+        } else {
+            // Fallback to a safe truncated path + UUID if hashing fails
+            let safePath = String(fullPath.prefix(50)).replacingOccurrences(of: "/", with: "_")
+            return "\(safePath)_\(UUID().uuidString)"
+        }
     }
     
     /// Get the progress file URL for a given markdown file
@@ -123,16 +132,22 @@ class ProgressPersistence {
     /// Load checkbox states and collapse states from a progress file
     func loadProgress(for markdownFileURL: URL) -> SavedProgress? {
         let progressFileURL = getProgressFileURL(for: markdownFileURL)
-        
+
         guard FileManager.default.fileExists(atPath: progressFileURL.path) else {
             return nil
         }
-        
+
         do {
             let data = try Data(contentsOf: progressFileURL)
             let savedProgress = try JSONDecoder().decode(SavedProgress.self, from: data)
             return savedProgress
         } catch {
+            // Log the error for debugging
+            print("Warning: Failed to load progress file at \(progressFileURL.path): \(error.localizedDescription)")
+
+            // Delete corrupted progress file to prevent repeated errors
+            try? FileManager.default.removeItem(at: progressFileURL)
+
             return nil
         }
     }

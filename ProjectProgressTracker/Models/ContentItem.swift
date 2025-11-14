@@ -62,8 +62,14 @@ struct ContentItem: Identifiable, Equatable {
     /// Generate a stable ID based on item characteristics
     static func generateStableID(type: ItemType, text: String, level: Int, indentationLevel: Int, position: Int) -> String {
         // Create a hash of the text content to avoid issues with special characters in IDs
-        let textHash = text.data(using: .utf8)?.sha256().hexEncodedString().prefix(8) ?? ""
-        
+        let textHash: String
+        if let hash = text.data(using: .utf8)?.sha256().hexEncodedString().prefix(8) {
+            textHash = String(hash)
+        } else {
+            // Fallback to UUID prefix if encoding fails (extremely rare)
+            textHash = String(UUID().uuidString.prefix(8))
+        }
+
         // Format: "{type}_{indentLevel}_{level}_{textHash}_{position}"
         return "\(type.rawValue)_\(indentationLevel)_\(level)_\(textHash)_\(position)"
     }

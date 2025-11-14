@@ -11,12 +11,13 @@ import UniformTypeIdentifiers
 
 struct ContentView: View {
     @StateObject private var projectManager = ProjectManager.shared
-    @StateObject private var zoomManager = ZoomManager()
+    @EnvironmentObject var zoomManager: ZoomManager
     @State private var selectedFileURL: URL?
     @State private var fileContent: String = ""
     @State private var fileError: String?
     @State private var isLoading: Bool = false
     @State private var showRawMarkdown: Bool = false
+    @State private var currentLoadID: UUID = UUID() // Track current file load operation
     
     var body: some View {
         VStack(spacing: 0) {
@@ -198,29 +199,43 @@ struct ContentView: View {
     private func loadFileContent(from url: URL) {
         isLoading = true
         fileError = nil
-        
+
+        // Generate a new load ID to track this specific load operation
+        let loadID = UUID()
+        currentLoadID = loadID
+
         DispatchQueue.global(qos: .userInitiated).async {
             do {
                 // Read the file content with UTF-8 encoding
                 let content = try String(contentsOf: url, encoding: .utf8)
                 let parsedItems = MarkdownParser.shared.parse(content)
-                
+
                 // Create new document
                 let document = Document()
                 document.loadItems(parsedItems, filename: url.lastPathComponent, fileURL: url)
-                
+
                 DispatchQueue.main.async {
+                    // Only update if this is still the most recent load request
+                    guard self.currentLoadID == loadID else {
+                        return // Discard outdated results
+                    }
+
                     self.fileContent = content
                     // Add to project manager
                     self.projectManager.addProject(document)
                     self.projectManager.setActiveProject(document)
-                    
+
                     // Print the actual document content after all processing is complete
                     self.printDocumentContent(document: document, filename: url.lastPathComponent)
                     self.isLoading = false
                 }
             } catch {
                 DispatchQueue.main.async {
+                    // Only update if this is still the most recent load request
+                    guard self.currentLoadID == loadID else {
+                        return // Discard outdated errors
+                    }
+
                     self.fileError = "Failed to read file: \(error.localizedDescription)"
                     self.fileContent = ""
                     self.isLoading = false
