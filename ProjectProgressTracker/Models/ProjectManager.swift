@@ -72,8 +72,9 @@ class ProjectManager: ObservableObject {
     }
     
     /// Get active project
+    /// Returns nil if no project is explicitly set as active
     var activeProject: Document? {
-        guard let activeID = activeProjectID else { return projects.first }
+        guard let activeID = activeProjectID else { return nil }
         return projects.first { $0.id == activeID }
     }
     

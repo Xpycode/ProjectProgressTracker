@@ -176,18 +176,29 @@ struct ContentView: View {
             if let selectedURL = panel.url {
                 // Validate that the file exists and is readable
                 if FileManager.default.isReadableFile(atPath: selectedURL.path) {
-                    // Check if it's a markdown file based on content type
-                    if let type = try? selectedURL.resourceValues(forKeys: [.contentTypeKey]).contentType, type.conforms(to: UTType(importedAs: "net.daringfireball.markdown")) {
+                    // Check if it's a markdown file based on extension or content type
+                    let fileExtension = selectedURL.pathExtension.lowercased()
+                    let isMarkdownExtension = ["md", "markdown", "mdown", "mkd", "mkdn"].contains(fileExtension)
+
+                    // Try content type check as secondary validation
+                    let isMarkdownContentType: Bool
+                    if let type = try? selectedURL.resourceValues(forKeys: [.contentTypeKey]).contentType {
+                        isMarkdownContentType = type.conforms(to: UTType(importedAs: "net.daringfireball.markdown")) || type.conforms(to: .plainText)
+                    } else {
+                        isMarkdownContentType = false
+                    }
+
+                    if isMarkdownExtension || isMarkdownContentType {
                         // Check if project is already loaded
                         if projectManager.isProjectLoaded(with: selectedURL) {
                             fileError = "This project is already loaded."
                             return
                         }
-                        
+
                         selectedFileURL = selectedURL
                         loadFileContent(from: selectedURL)
                     } else {
-                        fileError = "Please select a markdown file."
+                        fileError = "Please select a markdown file (.md, .markdown, etc.)."
                     }
                 } else {
                     fileError = "Selected file is not readable."
@@ -224,9 +235,6 @@ struct ContentView: View {
                     // Add to project manager
                     self.projectManager.addProject(document)
                     self.projectManager.setActiveProject(document)
-
-                    // Print the actual document content after all processing is complete
-                    self.printDocumentContent(document: document, filename: url.lastPathComponent)
                     self.isLoading = false
                 }
             } catch {
@@ -254,24 +262,6 @@ struct ContentView: View {
             self.fileError = "Failed to read file: \(error.localizedDescription)"
             self.fileContent = ""
         }
-    }
-    
-    private func printDocumentContent(document: Document, filename: String) {
-        print("=== Document Content After Processing for \(filename) ===")
-        for (index, item) in document.items.enumerated() {
-            switch item.type {
-            case .header:
-                print("  \(index): Header (level \(item.level)): \(item.text) [ID: \(item.id)]")
-            case .checkbox:
-                print("  \(index): Checkbox (\(item.isChecked ? "checked" : "unchecked")): \(item.text) [ID: \(item.id)]")
-            case .text:
-                print("  \(index): Text: \(item.text) [ID: \(item.id)]")
-            }
-        }
-        print("Final Completion: \(document.completionPercentage)%")
-        print("Total Checkboxes: \(document.checkboxItems.count)")
-        print("Checked Checkboxes: \(document.checkedItems.count)")
-        print("========================================================")
     }
     
     private func formatTime(_ date: Date) -> String {
