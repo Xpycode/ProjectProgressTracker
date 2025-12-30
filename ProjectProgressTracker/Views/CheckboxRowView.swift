@@ -13,8 +13,24 @@ struct CheckboxRowView: View {
     let item: ContentItem
     let isSelected: Bool
     
+    /// Indentation per level in pixels
+    private let indentPerLevel: CGFloat = 20
+
     var body: some View {
         HStack(alignment: .center, spacing: 6) {
+            // Visual hierarchy indicator for nested items
+            if item.indentationLevel > 0 {
+                HStack(spacing: 0) {
+                    ForEach(0..<item.indentationLevel, id: \.self) { _ in
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(width: 1)
+                            .padding(.trailing, indentPerLevel - 1)
+                    }
+                }
+                .frame(height: 20)
+            }
+
             Button(action: {
                 document.updateCheckbox(id: item.id, isChecked: !item.isChecked)
             }) {
@@ -44,7 +60,7 @@ struct CheckboxRowView: View {
                     .background(Color.gray.opacity(0.13))
                     .cornerRadius(3)
             }
-            
+
             if let dueDate = item.dueDate {
                 Text(dueDate, style: .date)
                     .font(.caption2)
@@ -56,7 +72,7 @@ struct CheckboxRowView: View {
             }
         }
         .padding(.vertical, 0)
-        .padding(.leading, CGFloat(item.indentationLevel * 8 + 12))
+        .padding(.leading, 12)
         .background(isSelected ? Color.accentColor.opacity(0.2) : Color.clear)
         .cornerRadius(4)
     }

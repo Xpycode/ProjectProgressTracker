@@ -309,8 +309,8 @@ class Document: ObservableObject, Identifiable {
             with: savedProgress
         )
 
-        // If no expanded headers were preserved and no saved data exists, default to expanding all
-        if reconciledHeaders.isEmpty && savedProgress == nil {
+        // If no expanded headers were preserved, default to expanding all headers
+        if reconciledHeaders.isEmpty {
             let headerIDs = newItems.filter { $0.type == .header }.map { $0.id }
             expandedHeaders = Set(headerIDs)
         } else {
