@@ -13,19 +13,30 @@ struct CheckboxRowView: View {
     let item: ContentItem
     let isSelected: Bool
     
-    /// Indentation per level in pixels
-    private let indentPerLevel: CGFloat = 20
+    /// Indentation per header level in pixels
+    private let indentPerHeaderLevel: CGFloat = 12
+    /// Indentation per markdown level in pixels
+    private let indentPerMarkdownLevel: CGFloat = 16
+
+    /// Calculate visual indentation based on parent header level and markdown indentation
+    private var visualIndentation: CGFloat {
+        let headerLevel = document.parentHeaderLevel(for: item)
+        let headerIndent = CGFloat(headerLevel) * indentPerHeaderLevel
+        let markdownIndent = CGFloat(item.indentationLevel / 2) * indentPerMarkdownLevel
+        return 12 + headerIndent + markdownIndent
+    }
 
     var body: some View {
         HStack(alignment: .center, spacing: 6) {
-            // Visual hierarchy indicator for nested items
-            if item.indentationLevel > 0 {
+            // Visual guide lines for markdown-nested items
+            let markdownLevel = item.indentationLevel / 2
+            if markdownLevel > 0 {
                 HStack(spacing: 0) {
-                    ForEach(0..<item.indentationLevel, id: \.self) { _ in
+                    ForEach(0..<markdownLevel, id: \.self) { _ in
                         Rectangle()
-                            .fill(Color.gray.opacity(0.3))
+                            .fill(Color.gray.opacity(0.4))
                             .frame(width: 1)
-                            .padding(.trailing, indentPerLevel - 1)
+                            .padding(.trailing, indentPerMarkdownLevel - 1)
                     }
                 }
                 .frame(height: 20)
@@ -72,7 +83,7 @@ struct CheckboxRowView: View {
             }
         }
         .padding(.vertical, 0)
-        .padding(.leading, 12)
+        .padding(.leading, visualIndentation)
         .background(isSelected ? Color.accentColor.opacity(0.2) : Color.clear)
         .cornerRadius(4)
     }

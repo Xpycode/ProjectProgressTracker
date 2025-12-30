@@ -44,7 +44,7 @@ struct HeaderRowView: View {
             }
         }
         .padding(.vertical, 1)
-        .padding(.leading, CGFloat(item.indentationLevel * 8))
+        .padding(.leading, CGFloat((item.level - 1) * 12))
         .contentShape(Rectangle())
         .background(isSelected ? Color.accentColor.opacity(0.2) : Color.clear)
         .cornerRadius(4)

@@ -451,7 +451,24 @@ class Document: ObservableObject, Identifiable {
 
         return (totalCheckboxes, checkedCheckboxes)
     }
-    
+
+    /// Get the parent header level for an item
+    /// Returns the level of the immediately preceding header (1-6), or 0 if no header found
+    func parentHeaderLevel(for item: ContentItem) -> Int {
+        guard let itemIndex = items.firstIndex(where: { $0.id == item.id }) else {
+            return 0
+        }
+
+        // Search backwards for the first header
+        for i in stride(from: itemIndex - 1, through: 0, by: -1) {
+            if items[i].type == .header {
+                return items[i].level
+            }
+        }
+
+        return 0
+    }
+
     /// File URL for this document
     var fileURL: URL? {
         return markdownFileURL
