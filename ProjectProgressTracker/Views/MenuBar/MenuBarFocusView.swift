@@ -2,13 +2,37 @@ import SwiftUI
 
 struct MenuBarFocusView: View {
     @ObservedObject var document: Document
-    
+
     private let numberOfNextItems = 9
-    
+
     var body: some View {
         let (lastChecked, nextItems) = document.items(numberOfNextItems: numberOfNextItems)
-        
+
         return VStack(alignment: .leading, spacing: 8) {
+            // Undo/Redo buttons
+            if document.canUndo || document.canRedo {
+                HStack(spacing: 8) {
+                    Button(action: { document.undo() }) {
+                        Label("Undo", systemImage: "arrow.uturn.backward")
+                            .font(.caption)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .disabled(!document.canUndo)
+
+                    Button(action: { document.redo() }) {
+                        Label("Redo", systemImage: "arrow.uturn.forward")
+                            .font(.caption)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .disabled(!document.canRedo)
+
+                    Spacer()
+                }
+                Divider()
+            }
+
             if let lastChecked = lastChecked {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Last Completed")

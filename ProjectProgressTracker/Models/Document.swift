@@ -8,6 +8,12 @@
 import Foundation
 import Combine
 
+/// Represents a single undo action for checkbox state changes
+struct CheckboxUndoAction {
+    let changes: [(id: String, wasChecked: Bool)]
+    let previousLastCheckedItemID: String?
+}
+
 class Document: ObservableObject, Identifiable {
     let id = UUID()
     @Published var items: [ContentItem] = []
@@ -25,6 +31,11 @@ class Document: ObservableObject, Identifiable {
 
     // Track expanded/collapsed state for headers (now using String IDs)
     @Published var expandedHeaders: Set<String> = []
+
+    // Undo/Redo stacks
+    private var undoStack: [CheckboxUndoAction] = []
+    private var redoStack: [CheckboxUndoAction] = []
+    private let maxUndoSteps = 10
 
     private var fileWatcher: FileWatcher?
     private var markdownFileURL: URL?
@@ -102,20 +113,45 @@ class Document: ObservableObject, Identifiable {
         guard let index = items.firstIndex(where: { $0.id == id }) else { return }
         guard items[index].type == .checkbox else { return }
 
+        // Record state before changes for undo
+        let previousLastCheckedID = lastCheckedItemID
+        var changedItems: [(id: String, wasChecked: Bool)] = []
+
         let parentIndentation = items[index].indentationLevel
+
+        // Record the main checkbox state
+        changedItems.append((id: id, wasChecked: items[index].isChecked))
 
         // Update the checkbox itself
         items[index] = items[index].withCheckedState(isChecked)
 
-        // Cascade down: Check/uncheck all child checkboxes
-        updateChildCheckboxes(startingAt: index, parentIndentation: parentIndentation, isChecked: isChecked)
+        // Cascade down: Check/uncheck all child checkboxes (and record changes)
+        for i in (index + 1)..<items.count {
+            let currentItem = items[i]
+            if currentItem.indentationLevel <= parentIndentation {
+                break
+            }
+            if currentItem.type == .checkbox && currentItem.isChecked != isChecked {
+                changedItems.append((id: currentItem.id, wasChecked: currentItem.isChecked))
+                items[i] = currentItem.withCheckedState(isChecked)
+            }
+        }
 
         // Cascade up: Auto-check parent if all siblings are checked
         if isChecked {
-            updateParentCheckboxes(childIndex: index)
+            recordAndUpdateParentCheckboxes(childIndex: index, changedItems: &changedItems)
             // Track this as the most recently checked item
             lastCheckedItemID = id
         }
+
+        // Push to undo stack
+        let undoAction = CheckboxUndoAction(changes: changedItems, previousLastCheckedItemID: previousLastCheckedID)
+        undoStack.append(undoAction)
+        if undoStack.count > maxUndoSteps {
+            undoStack.removeFirst()
+        }
+        // Clear redo stack when a new action is performed
+        redoStack.removeAll()
 
         // Update last checked date
         lastCheckedDate = Date()
@@ -128,29 +164,11 @@ class Document: ObservableObject, Identifiable {
         }
     }
 
-    /// Update all child checkboxes (items with higher indentation level)
-    private func updateChildCheckboxes(startingAt parentIndex: Int, parentIndentation: Int, isChecked: Bool) {
-        // Iterate through items after the parent
-        for i in (parentIndex + 1)..<items.count {
-            let currentItem = items[i]
-
-            // Stop when we hit an item at the same or lower indentation level
-            if currentItem.indentationLevel <= parentIndentation {
-                break
-            }
-
-            // Update child checkboxes
-            if currentItem.type == .checkbox {
-                items[i] = currentItem.withCheckedState(isChecked)
-            }
-        }
-    }
-
-    /// Check if parent checkbox should be auto-checked when all children are checked
-    private func updateParentCheckboxes(childIndex: Int) {
+    /// Record parent checkbox changes and update them (for undo tracking)
+    private func recordAndUpdateParentCheckboxes(childIndex: Int, changedItems: inout [(id: String, wasChecked: Bool)]) {
         let childIndentation = items[childIndex].indentationLevel
 
-        // Find the parent checkbox (first checkbox with lower indentation above this one)
+        // Find the parent checkbox
         var parentIndex: Int?
         for i in (0..<childIndex).reversed() {
             let item = items[i]
@@ -164,17 +182,13 @@ class Document: ObservableObject, Identifiable {
 
         let parentIndentation = items[parentIdx].indentationLevel
 
-        // Check if all sibling checkboxes (same indentation) are checked
+        // Check if all sibling checkboxes are checked
         var allSiblingsChecked = true
         for i in (parentIdx + 1)..<items.count {
             let item = items[i]
-
-            // Stop when we exit the parent's scope
             if item.indentationLevel <= parentIndentation {
                 break
             }
-
-            // Only check direct children (one level deeper)
             if item.type == .checkbox && item.indentationLevel == childIndentation {
                 if !item.isChecked {
                     allSiblingsChecked = false
@@ -185,11 +199,80 @@ class Document: ObservableObject, Identifiable {
 
         // If all siblings are checked, check the parent and recurse upward
         if allSiblingsChecked && !items[parentIdx].isChecked {
+            changedItems.append((id: items[parentIdx].id, wasChecked: items[parentIdx].isChecked))
             items[parentIdx] = items[parentIdx].withCheckedState(true)
-            updateParentCheckboxes(childIndex: parentIdx)
+            recordAndUpdateParentCheckboxes(childIndex: parentIdx, changedItems: &changedItems)
         }
     }
-    
+
+    // MARK: - Undo/Redo
+
+    /// Whether undo is available
+    var canUndo: Bool {
+        !undoStack.isEmpty
+    }
+
+    /// Whether redo is available
+    var canRedo: Bool {
+        !redoStack.isEmpty
+    }
+
+    /// Undo the last checkbox action
+    func undo() {
+        guard let action = undoStack.popLast() else { return }
+
+        // Record current state for redo
+        var redoChanges: [(id: String, wasChecked: Bool)] = []
+        for change in action.changes {
+            if let index = items.firstIndex(where: { $0.id == change.id }) {
+                redoChanges.append((id: change.id, wasChecked: items[index].isChecked))
+            }
+        }
+        let redoAction = CheckboxUndoAction(changes: redoChanges, previousLastCheckedItemID: lastCheckedItemID)
+        redoStack.append(redoAction)
+
+        // Restore previous state
+        for change in action.changes {
+            if let index = items.firstIndex(where: { $0.id == change.id }) {
+                items[index] = items[index].withCheckedState(change.wasChecked)
+            }
+        }
+        lastCheckedItemID = action.previousLastCheckedItemID
+
+        scheduleAutoSave()
+        if let url = markdownFileURL {
+            _ = ProgressPersistence.shared.saveProgress(for: self, markdownFileURL: url)
+        }
+    }
+
+    /// Redo the last undone action
+    func redo() {
+        guard let action = redoStack.popLast() else { return }
+
+        // Record current state for undo
+        var undoChanges: [(id: String, wasChecked: Bool)] = []
+        for change in action.changes {
+            if let index = items.firstIndex(where: { $0.id == change.id }) {
+                undoChanges.append((id: change.id, wasChecked: items[index].isChecked))
+            }
+        }
+        let undoAction = CheckboxUndoAction(changes: undoChanges, previousLastCheckedItemID: lastCheckedItemID)
+        undoStack.append(undoAction)
+
+        // Apply redo state
+        for change in action.changes {
+            if let index = items.firstIndex(where: { $0.id == change.id }) {
+                items[index] = items[index].withCheckedState(change.wasChecked)
+            }
+        }
+        lastCheckedItemID = action.previousLastCheckedItemID
+
+        scheduleAutoSave()
+        if let url = markdownFileURL {
+            _ = ProgressPersistence.shared.saveProgress(for: self, markdownFileURL: url)
+        }
+    }
+
     /// Toggle header expanded/collapsed state
     func toggleHeaderExpansion(headerID: String) {
         if expandedHeaders.contains(headerID) {

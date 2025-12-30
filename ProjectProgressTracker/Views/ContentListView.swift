@@ -32,6 +32,22 @@ struct ContentListView: View {
             .frame(width: 0, height: 0)
             .hidden()
 
+            // Hidden button to capture undo (Cmd+Z)
+            Button("") {
+                document.undo()
+            }
+            .keyboardShortcut("z", modifiers: .command)
+            .frame(width: 0, height: 0)
+            .hidden()
+
+            // Hidden button to capture redo (Cmd+Shift+Z)
+            Button("") {
+                document.redo()
+            }
+            .keyboardShortcut("z", modifiers: [.command, .shift])
+            .frame(width: 0, height: 0)
+            .hidden()
+
             ScrollViewReader { proxy in
                 List(selection: $selectedItemIDs) {
                     ForEach(filteredItems, id: \.id) { item in

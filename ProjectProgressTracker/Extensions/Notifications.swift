@@ -17,4 +17,6 @@ extension Notification.Name {
     static let navigateToPreviousSubHeader = Notification.Name("navigateToPreviousSubHeader")
     static let navigateToNextBoldCheckbox = Notification.Name("navigateToNextBoldCheckbox")
     static let navigateToPreviousBoldCheckbox = Notification.Name("navigateToPreviousBoldCheckbox")
+    static let undoCheckbox = Notification.Name("undoCheckbox")
+    static let redoCheckbox = Notification.Name("redoCheckbox")
 }
