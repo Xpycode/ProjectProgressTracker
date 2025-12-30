@@ -8,15 +8,40 @@
 import Foundation
 import RegexBuilder
 import CryptoKit
+import AppKit
 
 class MarkdownParser {
     static let shared = MarkdownParser()
-    
+
     private init() {}
-    
+
+    /// Detects if content is RTF and converts it to plain text if needed
+    private func preprocessContent(_ content: String) -> String {
+        // Check if content starts with RTF header
+        let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.hasPrefix("{\\rtf") else {
+            return content
+        }
+
+        // Convert RTF to plain text using NSAttributedString
+        guard let data = content.data(using: .utf8),
+              let attributedString = try? NSAttributedString(
+                data: data,
+                options: [.documentType: NSAttributedString.DocumentType.rtf],
+                documentAttributes: nil
+              ) else {
+            // If RTF conversion fails, return original content
+            return content
+        }
+
+        return attributedString.string
+    }
+
     /// Parses markdown content into structured ContentItems
     func parse(_ content: String) -> [ContentItem] {
-        let lines = content.components(separatedBy: .newlines)
+        // Preprocess to handle RTF files saved with .md extension
+        let processedContent = preprocessContent(content)
+        let lines = processedContent.components(separatedBy: .newlines)
         var items: [ContentItem] = []
         
         for (_, line) in lines.enumerated() {
