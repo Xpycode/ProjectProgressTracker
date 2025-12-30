@@ -20,6 +20,9 @@ class Document: ObservableObject, Identifiable {
     @Published var hasUnsavedChanges: Bool = false
     @Published var reloadError: String?
 
+    // Track the most recently checked item (for "Last Completed" display)
+    @Published var lastCheckedItemID: String?
+
     // Track expanded/collapsed state for headers (now using String IDs)
     @Published var expandedHeaders: Set<String> = []
 
@@ -110,6 +113,8 @@ class Document: ObservableObject, Identifiable {
         // Cascade up: Auto-check parent if all siblings are checked
         if isChecked {
             updateParentCheckboxes(childIndex: index)
+            // Track this as the most recently checked item
+            lastCheckedItemID = id
         }
 
         // Update last checked date
@@ -370,28 +375,36 @@ class Document: ObservableObject, Identifiable {
     }
 
     func items(numberOfNextItems: Int) -> (ContentItem?, [ContentItem]) {
-        let lastChecked = checkedItems.last
+        // Find the most recently checked item (by lastCheckedItemID), or fall back to last in document order
+        let lastChecked: ContentItem?
+        if let lastID = lastCheckedItemID,
+           let item = items.first(where: { $0.id == lastID && $0.isChecked }) {
+            lastChecked = item
+        } else {
+            lastChecked = checkedItems.last
+        }
+
         let upcomingItems = uncheckedItems
-        
+
         if upcomingItems.isEmpty {
             return (lastChecked, [])
         }
-        
+
         // Find the index of the first upcoming item in the main items array
         guard let firstUpcomingIndex = items.firstIndex(where: { $0.id == upcomingItems.first?.id }) else {
             return (lastChecked, Array(upcomingItems.prefix(numberOfNextItems)))
         }
-        
+
         // Find the header that precedes this item
         let header = items[0..<firstUpcomingIndex]
             .last { $0.type == .header }
-            
+
         var results: [ContentItem] = []
         if let header = header {
             results.append(header)
         }
         results.append(contentsOf: upcomingItems.prefix(numberOfNextItems))
-        
+
         return (lastChecked, results)
     }
 }
