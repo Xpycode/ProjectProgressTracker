@@ -76,10 +76,16 @@ struct ContentItem: Identifiable, Equatable, Hashable {
         return "\(type.rawValue)_\(indentationLevel)_\(level)_\(textHash)_\(position)"
     }
 
-    // MARK: - Hashable Conformance
+    // MARK: - Equatable & Hashable Conformance
 
     static func == (lhs: ContentItem, rhs: ContentItem) -> Bool {
-        return lhs.id == rhs.id
+        // Compare all properties that affect visual display
+        return lhs.id == rhs.id &&
+               lhs.isChecked == rhs.isChecked &&
+               lhs.text == rhs.text &&
+               lhs.type == rhs.type &&
+               lhs.level == rhs.level &&
+               lhs.indentationLevel == rhs.indentationLevel
     }
 
     func hash(into hasher: inout Hasher) {
