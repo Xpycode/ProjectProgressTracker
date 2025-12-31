@@ -4,6 +4,12 @@
 
 A macOS app for tracking progress on markdown checklists. Lives in your menu bar for quick access.
 
+![macOS](https://img.shields.io/badge/macOS-14.0+-blue)
+![Swift](https://img.shields.io/badge/Swift-5.0-orange)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Version](https://img.shields.io/badge/version-1.1-brightgreen)
+[![Download](https://img.shields.io/badge/Download-v1.1-blue)](https://github.com/Xpycode/ProjectProgressTracker/releases/latest)
+
 ## Features
 
 - Load and track multiple markdown files with checkboxes
