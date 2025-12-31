@@ -1,0 +1,16 @@
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+*.xcscmblueprint
+xcuserdata/
+
+# App bundles
+*.app/
+*.dmg
+
+# macOS
+.DS_Store
+
+# Archives
+*.xcarchive
